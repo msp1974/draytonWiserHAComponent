@@ -207,7 +207,8 @@ class WiserSmartPlug(SwitchEntity):
     @property
     def unique_id(self):
         """Return unique ID for the plug."""
-        return f"{self.data.wiserhub.system.name}-{self.plug_name}-{self.smart_plug_id}"
+        product_type = self.data.wiserhub.devices.get_by_id(self._device_id).product_type
+        return f"{self.data.wiserhub.system.name}-{product_type}-{self._device_id}"
 
     @property
     def icon(self):
