@@ -1,0 +1,131 @@
+boost_heating:
+  name: Boost Heating
+  description: >
+    Boost the temperature in the selected rooms/areas.
+  target:
+    entity:
+      domain: climate
+  fields:
+    time_period:
+      description: Set the time period for the boost in minutes.
+      example: 60
+      default: 60
+      required: true
+      selector:
+        number:
+          min: 1
+          max: 9999
+          step: 1
+          mode: box
+    temperature:
+      description: Set the increase in temperature for the boost period.
+      example: 3.0
+      default: 3.0
+      required: true
+      selector:
+        number:
+          min: 0.1
+          max: 5
+          step: 0.1
+          unit_of_measurement: C
+
+boost_hotwater:
+  name: Boost Hot Water
+  description: >
+    Boost the hot water for time specified.
+  target:
+    entity:
+      domain: select
+  fields:
+    time_period:
+      description: Set the time period for the boost in minutes.
+      example: 60
+      default: 60
+      required: true
+      selector:
+        number:
+          min: 1
+          max: 9999
+          step: 1
+          mode: box
+
+get_schedule:
+  name: Save Schedule to File
+  description: >
+    Read the schedule from a room and write to an output file in yaml
+  target:
+    entity:
+      domain: climate
+  fields:
+    filename:
+      name: Filename
+      description: >
+        The filename to write out the yaml. See README.MD if running within a
+        docker container.
+      required: true
+      example: schedule1.yaml
+      selector:
+        text:
+
+set_schedule:
+  name: Set Schedule From File
+  description: Read in the yaml schedule file and set the schedule in a room
+  target:
+    entity:
+      domain: climate
+  fields:
+    filename:
+      name: Filename
+      description: The filename to read the yaml schedule from.
+      required: true
+      example: schedules/schedule1.yaml
+      selector:
+        text:
+
+copy_schedule:
+  name: Copy Schedule
+  description: Copy the schedule in a room to another room
+  target:
+    entity:
+      domain: climate
+  fields:
+    to_entity_id:
+      name: To Entity
+      description: Enter the entity_id for the room to copy the schedule to.
+      required: true
+      example: climate.wiser_kitchen
+      selector:
+        entity:
+          domain: climate
+
+set_smartplug_mode:
+  name: Set Smart Plug Mode
+  description: Sets the mode of a smart plug
+  fields:
+    entity_id:
+      description: Enter the entity_id for the smartplug.
+      required: true
+      example: switch.smartplug
+    plug_mode:
+      description: Enter the switch mode. Can be auto or manual.
+      required: true
+      example: manual
+
+set_hotwater_mode:
+  name: "Set Hot Water Mode"
+  description: Sets the hot water mode
+  target:
+    entity:
+      domain: select
+  fields:
+    hotwater_mode:
+      name: "Hot water mode"
+      description: Enter the mode can be on, off or auto.
+      required: true
+      example: auto
+      selector:
+        select:
+          options:
+            - "Auto"
+            - "On"
+            - "Off"
