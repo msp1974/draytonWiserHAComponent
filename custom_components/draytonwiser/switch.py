@@ -4,6 +4,7 @@ Switch  Platform Device for Wiser Rooms.
 https://github.com/asantaga/wiserHomeAssistantPlatform
 Angelosantagata@gmail.com
 """
+import asyncio
 import voluptuous as vol
 
 from homeassistant.const import ATTR_ENTITY_ID
@@ -199,6 +200,10 @@ class WiserSmartPlug(SwitchEntity):
         self.smart_plug_id = plugId
         self.data = data
 
+    async def async_force_update(self):
+        await asyncio.sleep(1)
+        await self.data.async_update(no_throttle=True)
+
     async def async_update(self):
         """Async Update to HA."""
         _LOGGER.debug("Wiser %s Switch Update requested", self.plug_name)
@@ -266,6 +271,7 @@ class WiserSmartPlug(SwitchEntity):
         await self.hass.async_add_executor_job(
             self.data.wiserhub.devices.smartplugs.get_by_id(self.smart_plug_id).turn_on
         )
+        await self.async_force_update()
         return True
 
     async def async_turn_off(self, **kwargs):
@@ -273,6 +279,7 @@ class WiserSmartPlug(SwitchEntity):
         await self.hass.async_add_executor_job(
             self.data.wiserhub.devices.smartplugs.get_by_id(self.smart_plug_id).turn_off
         )
+        await self.async_force_update()
         return True
 
     async def set_smartplug_mode(self, plug_mode):
@@ -280,6 +287,7 @@ class WiserSmartPlug(SwitchEntity):
         await self.hass.async_add_executor_job(
             self.data.wiserhub.devices.smartplugs.get_by_id(self.smart_plug_id).mode, plug_mode
         )
+        await self.async_force_update()
         return True
 
     async def async_added_to_hass(self):
@@ -291,6 +299,6 @@ class WiserSmartPlug(SwitchEntity):
 
         self.async_on_remove(
             async_dispatcher_connect(
-                self.hass, "WiserHubUpdateMessage", async_update_state
+                self.hass, "{}-HubUpdateMessage".format(self.data.wiserhub.system.name), async_update_state
             )
         )
