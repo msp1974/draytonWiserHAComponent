@@ -27,6 +27,8 @@ from homeassistant.const import (
     CONF_NAME,
     CONF_PASSWORD,
     CONF_SCAN_INTERVAL,
+    MAJOR_VERSION,
+    MINOR_VERSION
 )
 from homeassistant.core import callback
 from homeassistant.exceptions import ConfigEntryNotReady
@@ -59,6 +61,7 @@ from .const import (
     MANUFACTURER,
     UPDATE_LISTENER,
     UPDATE_TRACK,
+    WISER_ADD_PLATFORMS,
     WISER_PLATFORMS,
     WISER_SERVICES,
 )
@@ -180,6 +183,13 @@ async def async_setup_entry(hass, config_entry):
         hass.async_create_task(
             hass.config_entries.async_forward_entry_setup(config_entry, platform)
         )
+
+    # Add new button functionality if HA > 2021.12
+    if MAJOR_VERSION > 2021 or (MAJOR_VERSION == 2021 and MINOR_VERSION >= 12):
+        for platform in WISER_ADD_PLATFORMS:
+            hass.async_create_task(
+                hass.config_entries.async_forward_entry_setup(config_entry, platform)
+            )
 
 
     @callback
