@@ -37,7 +37,7 @@ class WiserButton(ButtonEntity):
     @property
     def unique_id(self):
         """Return unique Id."""
-        return f'{self.data.wiserhub.system.name}-Wiser{self.name.replace(" ","")}Button'
+        return f'{self.data.wiserhub.system.name}-Wiser {self.name.replace(" ","")} Button'
     
     @property
     def device_info(self):
