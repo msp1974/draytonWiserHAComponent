@@ -47,24 +47,6 @@ WEEKENDS = ["saturday", "sunday"]
 SPECIALDAYS = ["weekdays", "weekends"]
 """
 
-WISER_SWITCHES = [
-    {
-        "name": "Valve Protection",
-        "key": "valve_protection_enabled",
-        "icon": "mdi:snowflake-alert",
-    },
-    {"name": "Eco Mode", "key": "eco_mode_enabled", "icon": "mdi:leaf"},
-    {
-        "name": "Away Mode Affects Hot Water",
-        "key": "away_mode_affects_hotwater",
-        "icon": "mdi:water",
-    },
-    {"name": "Comfort Mode", "key": "comfort_mode_enabled", "icon": "mdi:sofa"},
-    {"name": "Away Mode", "key": "away_mode_enabled", "icon": "mdi:beach"},
-    {"name": "Daylight Saving", "key": "automatic_daylight_saving_enabled", "icon": "mdi:clock-time-one" }  
-]
-
-
 SIGNAL_STRENGTH_ICONS = {
     "Online": "mdi:wifi-strength-4",
     "NoSignal": "mdi:wifi-strength-alert-outline",
