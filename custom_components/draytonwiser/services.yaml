@@ -129,3 +129,17 @@ set_hotwater_mode:
             - "Auto"
             - "On"
             - "Off"
+
+remove_orphaned_entries:
+  name: Remove Orphaned Devices
+  description: Delete devices that no longer exist on Wiser
+  fields:
+    wiser_hub_id:
+      name: Wiser Hub Name
+      description: >-
+        The name of the wiser hub to remove orhpaned devices from.  
+        This can be found from the integration name.
+      example: WiserHeatxxxxxx
+      required: true
+      selector:
+        text:

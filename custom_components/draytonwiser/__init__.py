@@ -74,7 +74,8 @@ ATTR_FILENAME = "filename"
 ATTR_COPYTO_ENTITY_ID = "to_entity_id"
 CONF_HUB_ID = "wiser_hub_id"
 SERVICE_REMOVE_ORPHANED_ENTRIES = "remove_orphaned_entries"
-SELECT_HUB_SCHEMA = {vol.Required(CONF_HUB_ID): str}
+
+SELECT_HUB_SCHEMA = vol.All(vol.Schema({vol.Required(CONF_HUB_ID): str}))
 
 CONFIG_SCHEMA = vol.Schema(
     {
@@ -102,21 +103,6 @@ CONFIG_SCHEMA = vol.Schema(
     },
     extra=vol.ALLOW_EXTRA,
 )
-
-GET_SET_SCHEDULE_SCHEMA = vol.Schema(
-    {
-        vol.Required(ATTR_ENTITY_ID): cv.entity_id,
-        vol.Optional(ATTR_FILENAME, default=""): vol.Coerce(str),
-    }
-)
-
-COPY_SCHEDULE_SCHEMA = vol.Schema(
-    {
-        vol.Required(ATTR_ENTITY_ID): cv.entity_id,
-        vol.Required(ATTR_COPYTO_ENTITY_ID): cv.entity_id,
-    }
-)
-
 
 async def async_setup(hass, config):
     """Set up of the Wiser Hub component."""
@@ -196,7 +182,7 @@ async def async_setup_entry(hass, config_entry):
     def remove_orphaned_entries_service(service):
         # Need to add check that this is a hub device
         hass.async_create_task(
-            data.async_remove_orphaned_entries
+            data.async_remove_orphaned_entries(service.data[CONF_HUB_ID])
         )
 
     hass.services.async_register(
@@ -329,49 +315,37 @@ class WiserHubHandle:
     @callback
     async def async_remove_orphaned_entries(self, wiser_hub_id):
         """Remove orphaned Wiser entries from device registry"""
-        device_registry = dr.async_get(self._hass)
-        entity_registry = er.async_get(self._hass)
+        if wiser_hub_id.lower() == self.wiserhub.system.name.lower():
+            _LOGGER.info(f"Removing orphaned devices for {wiser_hub_id}")
+            device_registry = dr.async_get(self._hass)
+            entity_registry = er.async_get(self._hass)
 
-        #entity_entries = async_entries_for_config_entry(
-        #    entity_registry, self._config_entry.entry_id
-        #)
+            devices_to_be_removed = []
 
-        #entities_to_be_removed = []
-        devices_to_be_removed = []
+            #Get list of all devices for integration
+            all_devices = [
+                entry
+                for entry in device_registry.devices.values()
+                if self._config_entry.entry_id in entry.config_entries
+            ]
 
-        #Get list of all devices for integration
-        all_devices = [
-            entry
-            for entry in device_registry.devices.values()
-            if self._config_entry.entry_id in entry.config_entries
-        ]
+            # Don't remove the Gateway host entry
+            wiser_hub = device_registry.async_get_device(
+                connections={(CONNECTION_NETWORK_MAC, self.wiserhub.system.network.mac_address)},
+                identifiers={(DOMAIN, self.unique_id)},
+            )
+            devices_to_be_removed = [ device.id for device in all_devices if device.id != wiser_hub.id ]
 
-        #Remove device if room no longer exists
-        for room in self.wiserhub.rooms.all:
-            if len(room.devices) == 0:
-                #Find device that relates to room
-                [devices_to_be_removed.append(device.id) for device in all_devices if device.name == "Wiser " + room.name]
-
-        #Remove device if wiser device no longer exists
-        for device in self.wiserhub.devices.all:
-            [devices_to_be_removed.append(device.id) for device in all_devices if device.name.startswith("Wiser")]
-
-        # Don't remove the Gateway host entry
-        wiser_hub = device_registry.async_get_device(
-            connections={(CONNECTION_NETWORK_MAC, self.wiserhub.system.network.mac_address)},
-            identifiers=set(),
-        )
-        if wiser_hub.id in devices_to_be_removed:
-            devices_to_be_removed.remove(wiser_hub.id)
-
-        # Remove devices that don't belong to any entity
-        for device_id in devices_to_be_removed:
-            if (
-                len(
-                    async_entries_for_device(
-                        entity_registry, device_id, include_disabled_entities=True
+            # Remove devices that don't belong to any entity
+            for device_id in devices_to_be_removed:
+                if (
+                    len(
+                        async_entries_for_device(
+                            entity_registry, device_id, include_disabled_entities=True
+                        )
                     )
-                )
-                == 0
-            ):
-                device_registry.async_remove_device(device_id)
+                    == 0
+                ):
+                    _LOGGER.info(f"Removed {device_id}")
+                    device_registry.async_remove_device(device_id)
+                    
