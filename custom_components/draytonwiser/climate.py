@@ -291,7 +291,10 @@ class WiserRoom(ClimateEntity):
         attrs["window_detection_active"] = self._room.window_detection_active
         attrs["away_mode_supressed"] = self._room.away_mode_suppressed
         attrs["next schedule change"] = str(self._room.schedule.next.time)
+        attrs["next_schedule_temp"] = self._room.schedule.next.setting
         attrs["is_boosted"] = self._room.is_boosted
+        attrs["is_override"] = self._room.is_override
+        attrs["is_heating"] = self._room.is_heating
         return attrs
 
     @property
