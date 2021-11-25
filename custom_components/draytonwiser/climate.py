@@ -147,7 +147,7 @@ class WiserRoom(ClimateEntity):
         self.schedule = {}
         self.room_id = room_id
         self._room = self.data.wiserhub.rooms.get_by_id(self.room_id)
-        self._hvac_modes_list = [HVAC_MODE_AUTO, HVAC_MODE_HEAT, HVAC_MODE_OFF]
+        self._hvac_modes_list = HVAC_MODES
 
         _LOGGER.info(
             "Wiser Room Initialisation for %s",
@@ -160,6 +160,8 @@ class WiserRoom(ClimateEntity):
     async def async_update(self):
         """Async update method."""
         self._room = self.data.wiserhub.rooms.get_by_id(self.room_id)
+        if not self._room.is_boosted:
+            self._boosted_time = 0
     
     @property
     def current_temperature(self):
@@ -236,9 +238,15 @@ class WiserRoom(ClimateEntity):
 
     @property
     def preset_mode(self):
-        """Set preset mode."""
+        """Get current preset mode."""
         try:
-            return WISER_PRESET_TO_HASS[self._room.target_temperature_origin]
+            if WISER_PRESET_TO_HASS[self._room.target_temperature_origin] == STATUS_BOOST:
+                if int(self._room.boost_time_remaining/60) != 0:
+                    return f"{STATUS_BOOST} {int(self._room.boost_time_remaining/60)}m"
+                else:
+                    return STATUS_BOOST
+            else:
+                return WISER_PRESET_TO_HASS[self._room.target_temperature_origin]
         except KeyError:
             return None
     
