@@ -90,6 +90,7 @@ HVAC_MODE_WISER_TO_HASS = {
 
 HVAC_MODE_HASS_TO_WISER = {
     HVAC_MODE_AUTO: "Auto",
+    HVAC_MODE_HEAT_COOL: "Auto",
     HVAC_MODE_HEAT: "Manual",
     HVAC_MODE_OFF: "Off",
 }
@@ -220,7 +221,7 @@ class WiserRoom(ClimateEntity):
         _LOGGER.debug(
             "Setting HVAC mode to %s for %s", hvac_mode, self._room.name
         )
-        self._room.mode = self._get_hvac_modes[hvac_mode]
+        self._room.mode = HVAC_MODE_HASS_TO_WISER[hvac_mode]
         self.hass.async_create_task(
             self.async_force_update()
         )
