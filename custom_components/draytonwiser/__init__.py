@@ -52,7 +52,7 @@ from .const import (
     DEFAULT_SETPOINT_MODE,
     CONF_HEATING_BOOST_TEMP,
     CONF_HEATING_BOOST_TIME,
-    CONF_GOOGLE_HOME_MODE,
+    CONF_HW_BOOST_TIME,
     DATA,
     DEFAULT_BOOST_TEMP,
     DEFAULT_BOOST_TEMP_TIME,
@@ -182,9 +182,10 @@ async def async_setup_entry(hass, config_entry):
     @callback
     def remove_orphaned_entries_service(service):
         # Need to add check that this is a hub device
-        hass.async_create_task(
-            data.async_remove_orphaned_entries(service.data[CONF_HUB_ID])
-        )
+        for entry_id in hass.data[DOMAIN]:
+            hass.async_create_task(
+                data.async_remove_orphaned_entries(entry_id, service.data[CONF_HUB_ID])
+            )
 
     hass.services.async_register(
         DOMAIN,
@@ -254,9 +255,10 @@ class WiserHubHandle:
         self.boost_time = config_entry.options.get(
             CONF_HEATING_BOOST_TIME, DEFAULT_BOOST_TEMP_TIME
         )
+        self.hw_boost_time = config_entry.options.get(
+            CONF_HW_BOOST_TIME, DEFAULT_BOOST_TEMP_TIME
+        )
         self.setpoint_mode = config_entry.options.get(CONF_SETPOINT_MODE, DEFAULT_SETPOINT_MODE)
-        self.google_home_mode = config_entry.options.get(CONF_GOOGLE_HOME_MODE, False)
-        _LOGGER.info(f"Google Home Mode: {self.google_home_mode}")
 
     def connect(self):
         """Connect to Wiser Hub."""
@@ -316,10 +318,13 @@ class WiserHubHandle:
         )
 
     @callback
-    async def async_remove_orphaned_entries(self, wiser_hub_id: str, remove_entities: bool = False):
+    async def async_remove_orphaned_entries(self, entry_id, wiser_hub_id: str):
         """Remove orphaned Wiser entries from device registry"""
-        if wiser_hub_id.lower() == self.wiserhub.system.name.lower():
+        api = self._hass.data[DOMAIN][entry_id]["data"]
+
+        if api.wiserhub.system.name == wiser_hub_id:
             _LOGGER.info(f"Removing orphaned devices for {wiser_hub_id}")
+
             device_registry = dr.async_get(self._hass)
             entity_registry = er.async_get(self._hass)
 
@@ -329,13 +334,13 @@ class WiserHubHandle:
             all_devices = [
                 entry
                 for entry in device_registry.devices.values()
-                if self._config_entry.entry_id in entry.config_entries
+                if entry_id in entry.config_entries
             ]
 
             # Don't remove the Gateway host entry
             wiser_hub = device_registry.async_get_device(
-                connections={(CONNECTION_NETWORK_MAC, self.wiserhub.system.network.mac_address)},
-                identifiers={(DOMAIN, self.unique_id)},
+                connections={(CONNECTION_NETWORK_MAC, api.wiserhub.system.network.mac_address)},
+                identifiers={(DOMAIN, api.unique_id)},
             )
             devices_to_be_removed = [ device.id for device in all_devices if device.id != wiser_hub.id ]
 

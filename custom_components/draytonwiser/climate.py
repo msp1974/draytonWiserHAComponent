@@ -76,21 +76,13 @@ WISER_PRESET_TO_HASS = {
 }
 
 HVAC_MODE_WISER_TO_HASS = {
-    "normal": { 
         "Auto": HVAC_MODE_AUTO,
         "Manual": HVAC_MODE_HEAT,
         "Off": HVAC_MODE_OFF,
-    },
-    "google_home": {
-        "Auto": HVAC_MODE_HEAT_COOL,
-        "Manual": HVAC_MODE_HEAT,
-        "Off": HVAC_MODE_OFF,
-    }
 }
 
 HVAC_MODE_HASS_TO_WISER = {
     HVAC_MODE_AUTO: "Auto",
-    HVAC_MODE_HEAT_COOL: "Auto",
     HVAC_MODE_HEAT: "Manual",
     HVAC_MODE_OFF: "Off",
 }
@@ -155,16 +147,12 @@ class WiserRoom(ClimateEntity):
         self.schedule = {}
         self.room_id = room_id
         self._room = self.data.wiserhub.rooms.get_by_id(self.room_id)
-        self._hvac_modes_list = [value for value in self._get_hvac_modes.values()]
+        self._hvac_modes_list = [modes for modes in HVAC_MODE_HASS_TO_WISER.values()]
 
         _LOGGER.info(
             "Wiser Room Initialisation for %s",
             self._room.name,
         )
-
-    @property
-    def _get_hvac_modes(self) -> dict:
-        return HVAC_MODE_WISER_TO_HASS["google_home"] if self.data.google_home_mode else HVAC_MODE_WISER_TO_HASS["normal"]
 
     async def async_force_update(self):
         await self.data.async_update(no_throttle=True)
@@ -285,7 +273,7 @@ class WiserRoom(ClimateEntity):
     @property
     def state(self):
         """Return state"""
-        return self._get_hvac_modes[self._room.mode]
+        return HVAC_MODE_WISER_TO_HASS[self._room.mode]
 
     @property
     def extra_state_attributes(self):

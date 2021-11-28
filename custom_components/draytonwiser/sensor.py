@@ -361,8 +361,9 @@ class WiserSystemCircuitState(WiserSensor):
     @property
     def device_info(self):
         """Return device specific attributes."""
+        identifier = self.data.unique_id
         return {
-            "identifiers": {(DOMAIN, self.data.unique_id)},
+            "identifiers": {(DOMAIN, identifier)},
             "via_device": (DOMAIN, self.data.wiserhub.system.name),
         }
 
@@ -394,13 +395,18 @@ class WiserSystemCircuitState(WiserSensor):
         attrs = {}
         if self._sensor_type == "Heating":
             heating_channel = self.data.wiserhub.heating_channels.get_by_id(self._device_id)
-            channel_name = heating_channel.name
-            channel_pct_dmd = heating_channel.percentage_demand
-            channel_room_ids = heating_channel.room_ids
-            attr_name = f"percentage_demand_{channel_name}"
-            attrs[attr_name] = channel_pct_dmd
-            attr_name_2 = f"room_ids_{channel_name}"
-            attrs[attr_name_2] = channel_room_ids
+            attrs[f"percentage_demand_{heating_channel.name}"] = heating_channel.percentage_demand
+            attrs[f"room_ids_{heating_channel.name}"] = heating_channel.room_ids
+        else:
+            hw = self.data.wiserhub.hotwater
+            # If boosted show boost end time
+            if hw.is_boosted:
+                attrs["boost_end"] = hw.boost_end_time
+            attrs["boost_time_remaining"] = int(hw.boost_time_remaining/60)
+            attrs["away_mode_supressed"] = hw.away_mode_suppressed
+            attrs["next schedule change"] = str(hw.schedule.next.time)
+            attrs["next_schedule_state"] = hw.schedule.next.setting
+            attrs["is_boosted"] = hw.is_boosted
         return attrs
 
 

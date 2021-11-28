@@ -11,7 +11,7 @@ _LOGGER = logging.getLogger(__name__)
 
 DOMAIN = "draytonwiser"
 DATA_WISER_CONFIG = "wiser_config"
-VERSION = "1.3.1"
+VERSION = "3.1.0"
 WISER_PLATFORMS = ["climate", "sensor", "switch", "select"]
 WISER_ADD_PLATFORMS = ["button"]
 DATA = "data"
@@ -38,7 +38,6 @@ CONF_HEATING_BOOST_TEMP = "heating_boost_temp"
 CONF_HEATING_BOOST_TIME = "heating_boost_time"
 CONF_HW_BOOST_TIME = "hotwater_boost_time"
 CONF_SETPOINT_MODE = "setpoint_mode"
-CONF_GOOGLE_HOME_MODE = "google_home_mode"
 
 # Custom Attributes
 ATTR_TIME_PERIOD = "time_period"

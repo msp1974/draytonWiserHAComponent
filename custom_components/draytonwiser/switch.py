@@ -74,13 +74,6 @@ WISER_SWITCHES = [
     },
 ]
 
-WISER_ROOM_SWITCHES = [
-    {
-        "name": "Window Detection",
-        "key": "window_detection_active",
-        "icon": "mdi:window-closed",
-    },
-]
 
 
 
@@ -88,34 +81,28 @@ async def async_setup_entry(hass, config_entry, async_add_entities):
     """Add the Wiser System Switch entities."""
     data = hass.data[DOMAIN][config_entry.entry_id][DATA]  # Get Handler
 
-    # Add System Switches
-    wiser_system_switches = []
-    for switch in (switch for switch in WISER_SWITCHES if switch["type"] == "system"):
-        wiser_system_switches.append(
-            WiserSystemSwitch(data, switch["name"], switch["key"], switch["icon"])
-        )
-    async_add_entities(wiser_system_switches)
-
-
-    # Add room switches
-    wiser_room_switches = []
-    if data.wiserhub.rooms.count > 0:
-        for switch in (switch for switch in WISER_SWITCHES if switch["type"] == "room"):
-            for room in data.wiserhub.rooms.all:
-                if len(room.devices) > 0:
-                    wiser_room_switches.append(
-                        WiserRoomSwitch(data, switch["name"], switch["key"], switch["icon"], room.id )
-                    )
-        async_add_entities(wiser_room_switches)
+    # Add Defined Switches
+    wiser_switches = []
+    for switch in WISER_SWITCHES:
+        if switch["type"] == "room":
+            for room in [room for room in data.wiserhub.rooms.all if len(room.devices) > 0]:
+                wiser_switches.append(
+                    WiserRoomSwitch(data, switch["name"], switch["key"], switch["icon"], room.id )
+                )
+        elif switch["type"] == "system":
+            wiser_switches.append(
+                WiserSystemSwitch(data, switch["name"], switch["key"], switch["icon"])
+            )
+        
+    async_add_entities(wiser_switches)
 
 
     # Add SmartPlugs (if any)
-    if data.wiserhub.devices.smartplugs.count > 0:
-        wiser_smart_plugs = [
-            WiserSmartPlug(data, plug.id, "Wiser {}".format(plug.name))
-            for plug in data.wiserhub.devices.smartplugs.all
-        ]
-        async_add_entities(wiser_smart_plugs)
+    wiser_smart_plugs = [
+        WiserSmartPlug(data, plug.id, "Wiser {}".format(plug.name))
+        for plug in data.wiserhub.devices.smartplugs.all
+    ]
+    async_add_entities(wiser_smart_plugs)
 
     @callback
     def set_smartplug_mode(service):
@@ -301,7 +288,16 @@ class WiserHotWaterSwitch(WiserSwitch):
     @property
     def unique_id(self):
         """Return uniqueId."""
-        return f"{self.data.wiserhub.system.name}-system-switch-{self.name}"
+        return f"{self.data.wiserhub.system.name}-switch-{self.name}"
+
+    @property
+    def device_info(self):
+        """Return device specific attributes."""
+        identifier = f"{self.data.wiserhub.system.name}-WiserHotWater"
+        return {
+            "identifiers": {(DOMAIN, identifier)},
+            "via_device": (DOMAIN, self.data.wiserhub.system.name),
+        }
 
     @property
     def extra_state_attributes(self):

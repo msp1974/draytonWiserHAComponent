@@ -116,7 +116,7 @@ class WiserHotWaterModeSelect(WiserSelectEntity):
     @property
     def device_info(self):
         """Return device specific attributes."""
-        identifier = f"{self.data.wiserhub.system.name}-WiserHotWater"
+        identifier = self.data.unique_id
         return {
             "identifiers": {(DOMAIN, identifier)},
             "via_device": (DOMAIN, self.data.wiserhub.system.name),

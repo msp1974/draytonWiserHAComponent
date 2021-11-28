@@ -23,6 +23,9 @@ async def async_setup_entry(hass, config_entry, async_add_entities):
         wiser_buttons.append(
             WiserBoostHotWaterButton(hass, data)
         )
+        wiser_buttons.append(
+            WiserCancelBoostHotWaterButton(hass, data)
+        )
     async_add_entities(wiser_buttons, True)
 
 
@@ -98,20 +101,16 @@ class WiserCancelHeatingOverridesButton(WiserButton):
     def name(self):
         return "Cancel All Heating Overrides"
 
+
 class WiserBoostHotWaterButton(WiserButton):
     def __init__(self, hass, data):
         super().__init__(hass, data)
 
     async def async_press(self):
-        if self.data.wiserhub.hotwater.is_boosted:
-            await self.hass.async_add_executor_job(
-                self.data.wiserhub.hotwater.cancel_overrides
-            )
-        else:
-            boost_time = self.data.boost_time
-            await self.hass.async_add_executor_job(
-                self.data.wiserhub.hotwater.boost, boost_time
-            )
+        boost_time = self.data.hw_boost_time
+        await self.hass.async_add_executor_job(
+            self.data.wiserhub.hotwater.boost, boost_time
+        )
         await self.async_force_update()
 
     @property
@@ -120,18 +119,23 @@ class WiserBoostHotWaterButton(WiserButton):
 
     @property
     def icon(self):
-        if self.data.wiserhub.hotwater.is_boosted:
-            return "mdi:timer"
-        return "mdi:timer-off"
+        return "mdi:timer"
+
+
+class WiserCancelBoostHotWaterButton(WiserButton):
+    def __init__(self, hass, data):
+        super().__init__(hass, data)
+
+    async def async_press(self):
+        await self.hass.async_add_executor_job(
+            self.data.wiserhub.hotwater.cancel_overrides
+        )
+        await self.async_force_update()
 
     @property
-    def device_info(self):
-        """Return device specific attributes."""
-        identifier = f"{self.data.wiserhub.system.name}-WiserHotWater"
-        return {
-            "name": "Wiser Hot Water",
-            "identifiers": {(DOMAIN, identifier)},
-            "manufacturer": MANUFACTURER,
-            "model": "Hot Water",
-            "via_device": (DOMAIN, self.data.wiserhub.system.name),
-        }
+    def name(self):
+        return "Cancel Boost Hot Water"
+
+    @property
+    def icon(self):
+        return "mdi:timer-off"

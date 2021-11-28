@@ -27,7 +27,6 @@ from .const import (
     CONF_HEATING_BOOST_TIME,
     CONF_SETPOINT_MODE,
     CONF_HW_BOOST_TIME,
-    CONF_GOOGLE_HOME_MODE,
     DEFAULT_BOOST_TEMP,
     DEFAULT_BOOST_TEMP_TIME,
     DEFAULT_SCAN_INTERVAL,
@@ -223,12 +222,6 @@ class WiserOptionsFlowHandler(config_entries.OptionsFlow):
                         CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL
                     ),
                 ): int,
-                vol.Optional(
-                    CONF_GOOGLE_HOME_MODE,
-                    default=self.config_entry.options.get(
-                        CONF_GOOGLE_HOME_MODE, False
-                    ),
-                ): bool,
                 vol.Optional(
                     CONF_SETPOINT_MODE,
                     default=self.config_entry.options.get(
