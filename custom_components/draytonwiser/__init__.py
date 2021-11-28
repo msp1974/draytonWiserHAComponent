@@ -50,8 +50,9 @@ from .const import (
     _LOGGER,
     CONF_SETPOINT_MODE,
     DEFAULT_SETPOINT_MODE,
-    CONF_BOOST_TEMP,
-    CONF_BOOST_TEMP_TIME,
+    CONF_HEATING_BOOST_TEMP,
+    CONF_HEATING_BOOST_TIME,
+    CONF_GOOGLE_HOME_MODE,
     DATA,
     DEFAULT_BOOST_TEMP,
     DEFAULT_BOOST_TEMP_TIME,
@@ -91,11 +92,11 @@ CONFIG_SCHEMA = vol.Schema(
                     vol.Optional(CONF_MINIMUM, default=TEMP_MINIMUM): vol.All(
                         vol.Coerce(int)
                     ),
-                    vol.Optional(CONF_BOOST_TEMP, default=DEFAULT_BOOST_TEMP): vol.All(
+                    vol.Optional(CONF_HEATING_BOOST_TEMP, default=DEFAULT_BOOST_TEMP): vol.All(
                         vol.Coerce(int)
                     ),
                     vol.Optional(
-                        CONF_BOOST_TEMP_TIME, default=DEFAULT_BOOST_TEMP_TIME
+                        CONF_HEATING_BOOST_TIME, default=DEFAULT_BOOST_TEMP_TIME
                     ): vol.All(vol.Coerce(int)),
                 }
             ],
@@ -249,11 +250,13 @@ class WiserHubHandle:
         self.wiserhub = None
         self.minimum_temp = TEMP_MINIMUM
         self.maximum_temp = TEMP_MAXIMUM
-        self.boost_temp = config_entry.options.get(CONF_BOOST_TEMP, DEFAULT_BOOST_TEMP)
+        self.boost_temp = config_entry.options.get(CONF_HEATING_BOOST_TEMP, DEFAULT_BOOST_TEMP)
         self.boost_time = config_entry.options.get(
-            CONF_BOOST_TEMP_TIME, DEFAULT_BOOST_TEMP_TIME
+            CONF_HEATING_BOOST_TIME, DEFAULT_BOOST_TEMP_TIME
         )
         self.setpoint_mode = config_entry.options.get(CONF_SETPOINT_MODE, DEFAULT_SETPOINT_MODE)
+        self.google_home_mode = config_entry.options.get(CONF_GOOGLE_HOME_MODE, False)
+        _LOGGER.info(f"Google Home Mode: {self.google_home_mode}")
 
     def connect(self):
         """Connect to Wiser Hub."""
@@ -313,7 +316,7 @@ class WiserHubHandle:
         )
 
     @callback
-    async def async_remove_orphaned_entries(self, wiser_hub_id):
+    async def async_remove_orphaned_entries(self, wiser_hub_id: str, remove_entities: bool = False):
         """Remove orphaned Wiser entries from device registry"""
         if wiser_hub_id.lower() == self.wiserhub.system.name.lower():
             _LOGGER.info(f"Removing orphaned devices for {wiser_hub_id}")

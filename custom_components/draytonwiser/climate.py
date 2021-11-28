@@ -15,6 +15,7 @@ from homeassistant.components.climate.const import (
     CURRENT_HVAC_IDLE,
     HVAC_MODE_AUTO,
     HVAC_MODE_HEAT,
+    HVAC_MODE_HEAT_COOL,
     HVAC_MODE_OFF,
     SERVICE_SET_PRESET_MODE,
     SUPPORT_PRESET_MODE,
@@ -28,15 +29,14 @@ from homeassistant.helpers.dispatcher import async_dispatcher_connect
 from homeassistant.util import dt
 
 from wiserHeatAPIv2.wiserhub import (
-    WiserHeatingModeEnum,
     TEMP_MINIMUM,
     TEMP_MAXIMUM
 )
 
 from .const import (
     _LOGGER,
-    CONF_BOOST_TEMP,
-    CONF_BOOST_TEMP_TIME,
+    CONF_HEATING_BOOST_TEMP,
+    CONF_HEATING_BOOST_TIME,
     DATA,
     DOMAIN,
     MANUFACTURER,
@@ -76,18 +76,25 @@ WISER_PRESET_TO_HASS = {
 }
 
 HVAC_MODE_WISER_TO_HASS = {
-    "Auto": HVAC_MODE_AUTO,
-    "Manual": HVAC_MODE_HEAT,
-    "Off": HVAC_MODE_OFF,
+    "normal": { 
+        "Auto": HVAC_MODE_AUTO,
+        "Manual": HVAC_MODE_HEAT,
+        "Off": HVAC_MODE_OFF,
+    },
+    "google_home": {
+        "Auto": HVAC_MODE_HEAT_COOL,
+        "Manual": HVAC_MODE_HEAT,
+        "Off": HVAC_MODE_OFF,
+    }
+}
+
+HVAC_MODE_HASS_TO_WISER = {
+    HVAC_MODE_AUTO: "Auto",
+    HVAC_MODE_HEAT: "Manual",
+    HVAC_MODE_OFF: "Off",
 }
 
 SUPPORT_FLAGS = SUPPORT_TARGET_TEMPERATURE | SUPPORT_PRESET_MODE
-
-HVAC_MODES = [
-    HVAC_MODE_OFF,
-    HVAC_MODE_HEAT,
-    HVAC_MODE_AUTO,
-]
 
 async def async_setup_entry(hass, config_entry, async_add_entities):
     """Set up Wiser climate device."""
@@ -147,12 +154,16 @@ class WiserRoom(ClimateEntity):
         self.schedule = {}
         self.room_id = room_id
         self._room = self.data.wiserhub.rooms.get_by_id(self.room_id)
-        self._hvac_modes_list = HVAC_MODES
+        self._hvac_modes_list = [value for value in self._get_hvac_modes.values()]
 
         _LOGGER.info(
             "Wiser Room Initialisation for %s",
             self._room.name,
         )
+
+    @property
+    def _get_hvac_modes(self) -> dict:
+        return HVAC_MODE_WISER_TO_HASS["google_home"] if self.data.google_home_mode else HVAC_MODE_WISER_TO_HASS["normal"]
 
     async def async_force_update(self):
         await self.data.async_update(no_throttle=True)
@@ -206,16 +217,10 @@ class WiserRoom(ClimateEntity):
 
     def set_hvac_mode(self, hvac_mode):
         """Set new operation mode."""
-        # Convert HA heat_cool to manual as required by api
-        if hvac_mode == HVAC_MODE_HEAT:
-            wiser_mode = WiserHeatingModeEnum.manual
-        else:
-            wiser_mode = WiserHeatingModeEnum[hvac_mode]
-
-        _LOGGER.info(
-            "Setting HVAC mode to %s for %s", wiser_mode.value, self._room.name
+        _LOGGER.debug(
+            "Setting HVAC mode to %s for %s", hvac_mode, self._room.name
         )
-        self._room.mode = wiser_mode
+        self._room.mode = self._get_hvac_modes[hvac_mode]
         self.hass.async_create_task(
             self.async_force_update()
         )
@@ -279,7 +284,7 @@ class WiserRoom(ClimateEntity):
     @property
     def state(self):
         """Return state"""
-        return HVAC_MODE_WISER_TO_HASS[self._room.mode.value]
+        return self._get_hvac_modes[self._room.mode]
 
     @property
     def extra_state_attributes(self):
