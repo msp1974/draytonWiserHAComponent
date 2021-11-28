@@ -29,36 +29,49 @@ SET_PLUG_MODE_SCHEMA = vol.Schema(
     }
 )
 
-WISER_SYSTEM_SWITCHES = [
+WISER_SWITCHES = [
     {
         "name": "Valve Protection",
-        "key": "valve_protection_enabled",
+        "key":  "valve_protection_enabled",
         "icon": "mdi:snowflake-alert",
+        "type": "system",
     },
     {
         "name": "Eco Mode", 
-        "key": "eco_mode_enabled", 
-        "icon": "mdi:leaf"},
+        "key":  "eco_mode_enabled", 
+        "icon": "mdi:leaf",
+        "type": "system",
+    },
     {
         "name": "Away Mode Affects Hot Water",
-        "key": "away_mode_affects_hotwater",
+        "key":  "away_mode_affects_hotwater",
         "icon": "mdi:water",
+        "type": "system",
     },
     {
         "name": "Comfort Mode", 
-        "key": "comfort_mode_enabled", 
-        "icon": "mdi:sofa"
+        "key":  "comfort_mode_enabled", 
+        "icon": "mdi:sofa",
+        "type": "system",
     },
     {
         "name": "Away Mode",
-        "key": "away_mode_enabled",
-        "icon": "mdi:beach"
+        "key":  "away_mode_enabled",
+        "icon": "mdi:beach",
+        "type": "system",
     },
     {
         "name": "Daylight Saving",
-        "key": "automatic_daylight_saving_enabled", 
-        "icon": "mdi:clock-time-one"
-    }  
+        "key":  "automatic_daylight_saving_enabled", 
+        "icon": "mdi:clock-time-one",
+        "type": "system",
+    },
+    {
+        "name": "Window Detection",
+        "key":  "window_detection_active",
+        "icon": "mdi:window-closed",
+        "type": "room"
+    },
 ]
 
 WISER_ROOM_SWITCHES = [
@@ -77,7 +90,7 @@ async def async_setup_entry(hass, config_entry, async_add_entities):
 
     # Add System Switches
     wiser_system_switches = []
-    for switch in WISER_SYSTEM_SWITCHES:
+    for switch in (switch for switch in WISER_SWITCHES if switch["type"] == "system"):
         wiser_system_switches.append(
             WiserSystemSwitch(data, switch["name"], switch["key"], switch["icon"])
         )
@@ -87,11 +100,11 @@ async def async_setup_entry(hass, config_entry, async_add_entities):
     # Add room switches
     wiser_room_switches = []
     if data.wiserhub.rooms.count > 0:
-        for switch in WISER_ROOM_SWITCHES:
+        for switch in (switch for switch in WISER_SWITCHES if switch["type"] == "room"):
             for room in data.wiserhub.rooms.all:
                 if len(room.devices) > 0:
                     wiser_room_switches.append(
-                        WiserRoomSwitch(data, room.id, switch["name"], switch["key"], switch["icon"])
+                        WiserRoomSwitch(data, switch["name"], switch["key"], switch["icon"], room.id )
                     )
         async_add_entities(wiser_room_switches)
 
@@ -155,13 +168,10 @@ class WiserSwitch(SwitchEntity):
         self._icon = icon
         self._name = name
         self._is_on = False
+        self._away_temperature = None
 
     async def async_force_update(self):
         await self.data.async_update(no_throttle=True)
-
-    async def async_update(self):
-        """Implement in switch type"""
-        pass
 
     @property
     def name(self):
@@ -174,14 +184,8 @@ class WiserSwitch(SwitchEntity):
         return self._icon
 
     @property
-    def device_info(self):
-        """Return device specific attributes."""
-        identifier = self.data.unique_id
-
-        return {
-            "identifiers": {(DOMAIN, identifier)},
-            "via": self.data.wiserhub.system.name,
-        }
+    def unique_id(self):
+        return f"{self.data.wiserhub.system.name}-{self._type}-switch-{self.name}"
 
     @property
     def should_poll(self):
@@ -193,6 +197,15 @@ class WiserSwitch(SwitchEntity):
         """Return true if device is on."""
         _LOGGER.debug("%s: %s", self._name, self._is_on)
         return self._is_on
+
+    async def async_turn_on(self, **kwargs):
+        """Turn the device on."""
+        raise NotImplemented
+
+    async def async_turn_off(self, **kwargs):
+        """Turn the device off."""
+        raise NotImplemented
+
 
     async def async_added_to_hass(self):
         """Subscribe for update from the hub."""
@@ -255,10 +268,56 @@ class WiserSystemSwitch(WiserSwitch):
         return attrs
 
 
+class WiserHotWaterSwitch(WiserSwitch):
+    """Switch to set the status of a hot water switch"""
+
+    def __init__(self, data, name, key, icon):
+        """Initialize the sensor."""
+        super().__init__(data, name, key, icon)
+
+    async def async_update(self):
+        """Async Update to HA."""
+        _LOGGER.debug("Wiser %s Switch Update requested", self._name)
+        self._is_on = getattr(self.data.wiserhub.system, self._key)
+        if self._name == "Away Mode":
+            self._away_temperature = self.data.wiserhub.system.away_mode_target_temperature
+
+    async def async_turn_on(self, **kwargs):
+        """Turn the device on."""
+        await self.hass.async_add_executor_job(
+            setattr, self.data.wiserhub.system, self._key, True
+        )
+        await self.async_force_update()
+        return True
+
+    async def async_turn_off(self, **kwargs):
+        """Turn the device off."""
+        await self.hass.async_add_executor_job(
+            setattr, self.data.wiserhub.system, self._key, False
+        )
+        await self.async_force_update()
+        return True
+
+    @property
+    def unique_id(self):
+        """Return uniqueId."""
+        return f"{self.data.wiserhub.system.name}-system-switch-{self.name}"
+
+    @property
+    def extra_state_attributes(self):
+        """Return the device state attributes for the attribute card."""
+        attrs = {}
+
+        if self._name == "Away Mode":
+            attrs["AwayModeTemperature"] = self._away_temperature
+
+        return attrs
+
+
 class WiserRoomSwitch(WiserSwitch):
     """Switch to set the status of a system switch"""
 
-    def __init__(self, data, room_id, name, key, icon):
+    def __init__(self, data, name, key, icon, room_id):
         """Initialize the sensor."""
         super().__init__(data, name, key, icon)
         self._room_id = room_id

@@ -32,8 +32,10 @@
         "step": {
             "init": {
                 "data": {
-                    "boost_temp": "Default Boost Temperature",
-                    "boost_time": "Default Boost Duration",
+                    "heating_boost_temp": "Default Heating Boost Temperature",
+                    "heating_boost_time": "Default Heating Boost Duration",
+                    "hotwater_boost_time": "Default Hot Water Boost Duration",
+                    "google_home_mode": "Google Home Compatibility Mode",
                     "scan_interval": "Scan Interval",
                     "setpoint_mode": "Setpoint Mode"
                 },

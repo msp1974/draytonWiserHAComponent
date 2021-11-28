@@ -23,9 +23,11 @@ from homeassistant.helpers.typing import DiscoveryInfoType
 
 from .const import (
     _LOGGER,
-    CONF_BOOST_TEMP,
-    CONF_BOOST_TEMP_TIME,
+    CONF_HEATING_BOOST_TEMP,
+    CONF_HEATING_BOOST_TIME,
     CONF_SETPOINT_MODE,
+    CONF_HW_BOOST_TIME,
+    CONF_GOOGLE_HOME_MODE,
     DEFAULT_BOOST_TEMP,
     DEFAULT_BOOST_TEMP_TIME,
     DEFAULT_SCAN_INTERVAL,
@@ -198,15 +200,21 @@ class WiserOptionsFlowHandler(config_entries.OptionsFlow):
         data_schema = vol.Schema(
             {
                 vol.Optional(
-                    CONF_BOOST_TEMP,
+                    CONF_HEATING_BOOST_TEMP,
                     default=self.config_entry.options.get(
-                        CONF_BOOST_TEMP, DEFAULT_BOOST_TEMP
+                        CONF_HEATING_BOOST_TEMP, DEFAULT_BOOST_TEMP
                     ),
                 ): int,
                 vol.Optional(
-                    CONF_BOOST_TEMP_TIME,
+                    CONF_HEATING_BOOST_TIME,
                     default=self.config_entry.options.get(
-                        CONF_BOOST_TEMP_TIME, DEFAULT_BOOST_TEMP_TIME
+                        CONF_HEATING_BOOST_TIME, DEFAULT_BOOST_TEMP_TIME
+                    ),
+                ): int,
+                vol.Optional(
+                    CONF_HW_BOOST_TIME,
+                    default=self.config_entry.options.get(
+                        CONF_HW_BOOST_TIME, DEFAULT_BOOST_TEMP_TIME
                     ),
                 ): int,
                 vol.Optional(
@@ -215,6 +223,12 @@ class WiserOptionsFlowHandler(config_entries.OptionsFlow):
                         CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL
                     ),
                 ): int,
+                vol.Optional(
+                    CONF_GOOGLE_HOME_MODE,
+                    default=self.config_entry.options.get(
+                        CONF_GOOGLE_HOME_MODE, False
+                    ),
+                ): bool,
                 vol.Optional(
                     CONF_SETPOINT_MODE,
                     default=self.config_entry.options.get(

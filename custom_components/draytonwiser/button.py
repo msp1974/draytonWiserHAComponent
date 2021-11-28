@@ -3,6 +3,7 @@ from .const import (
     _LOGGER,
     DATA,
     DOMAIN,
+    MANUFACTURER
 )
 
 from homeassistant.components.button import ButtonEntity
@@ -122,3 +123,15 @@ class WiserBoostHotWaterButton(WiserButton):
         if self.data.wiserhub.hotwater.is_boosted:
             return "mdi:timer"
         return "mdi:timer-off"
+
+    @property
+    def device_info(self):
+        """Return device specific attributes."""
+        identifier = f"{self.data.wiserhub.system.name}-WiserHotWater"
+        return {
+            "name": "Wiser Hot Water",
+            "identifiers": {(DOMAIN, identifier)},
+            "manufacturer": MANUFACTURER,
+            "model": "Hot Water",
+            "via_device": (DOMAIN, self.data.wiserhub.system.name),
+        }
