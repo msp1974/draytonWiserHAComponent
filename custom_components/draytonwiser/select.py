@@ -134,17 +134,20 @@ class WiserHotWaterModeSelect(WiserSelectEntity):
     def select_option(self, option: str) -> None:
         _LOGGER.debug("Setting hot water mode to {}".format(option))
         self._hotwater.mode = option
+        self._hotwater.cancel_overrides()
         self._hass.async_create_task(self.async_force_update())
 
     async def async_set_hotwater_mode(self, hotwater_mode):
         await self.hass.async_add_executor_job(
             self.select_option, hotwater_mode
         )
+        await self.async_force_update()
 
     async def async_boost_hotwater(self, time_period: int):
         await self.hass.async_add_executor_job(
             self.data.wiserhub.hotwater.boost, time_period
         )
+        await self.async_force_update()
 
 
 class WiserSmartPlugModeSelect(WiserSelectEntity):
