@@ -64,20 +64,6 @@ async def async_setup_entry(hass, config_entry, async_add_entities):
     async_add_entities(wiser_devices, True)
 
 
-    # Setup services
-    platform = entity_platform.async_get_current_platform()
-    """
-    platform.async_register_entity_service(
-        WISER_SERVICES["SERVICE_BOOST_HEATING"],
-        {
-            vol.Required(ATTR_TIME_PERIOD, default=0): vol.Coerce(int),
-            vol.Required(ATTR_TEMPERATURE, default=0): vol.Coerce(float),
-        },
-        "async_boost_heating"
-    )
-    """
-
-
 class WiserSensor(Entity):
     """Definition of a Wiser sensor."""
 
@@ -356,7 +342,10 @@ class WiserSystemCircuitState(WiserSensor):
         if self._sensor_type == "Heating":
             self._state = self.data.wiserhub.heating_channels.get_by_id(self._device_id).heating_relay_status
         else:
-            self._state = self.data.wiserhub.hotwater.current_state
+            if self.data.wiserhub.hotwater.is_boosted:
+                self._state = "Boosted"
+            else:
+                self._state = self.data.wiserhub.hotwater.current_state
 
     @property
     def device_info(self):
