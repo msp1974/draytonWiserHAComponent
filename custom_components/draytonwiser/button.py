@@ -84,7 +84,7 @@ class WiserBoostAllHeatingButton(WiserButton):
 
     @property
     def name(self):
-        return "Boost All Heating"
+        return "Wiser Boost All Heating"
     
 
 class WiserCancelHeatingOverridesButton(WiserButton):
@@ -99,7 +99,7 @@ class WiserCancelHeatingOverridesButton(WiserButton):
 
     @property
     def name(self):
-        return "Cancel All Heating Overrides"
+        return "Wiser Cancel All Heating Overrides"
 
 
 class WiserBoostHotWaterButton(WiserButton):
@@ -115,7 +115,7 @@ class WiserBoostHotWaterButton(WiserButton):
 
     @property
     def name(self):
-        return "Boost Hot Water"
+        return "Wiser Boost Hot Water"
 
     @property
     def icon(self):
@@ -134,7 +134,7 @@ class WiserCancelBoostHotWaterButton(WiserButton):
 
     @property
     def name(self):
-        return "Cancel Boost Hot Water"
+        return "Wiser Cancel Boost Hot Water"
 
     @property
     def icon(self):
