@@ -147,7 +147,7 @@ class WiserRoom(ClimateEntity):
         self.schedule = {}
         self.room_id = room_id
         self._room = self.data.wiserhub.rooms.get_by_id(self.room_id)
-        self._hvac_modes_list = [modes for modes in HVAC_MODE_HASS_TO_WISER.values()]
+        self._hvac_modes_list = [modes for modes in HVAC_MODE_HASS_TO_WISER.keys()]
 
         _LOGGER.info(
             "Wiser Room Initialisation for %s",
