@@ -188,11 +188,11 @@ class WiserRoom(ClimateEntity):
     def icon(self):
         """Return icon to show if radiator is heating, not heating or set to off."""
         if self._room.mode == "Off":
-            return "mdi:radiator-disabled"
+            return "mdi:radiator-off"
         elif self._room.is_heating:
             return "mdi:radiator"
         else:
-            return "mdi:radiator-off"
+            return "mdi:radiator-disabled"
 
     @property
     def hvac_action(self):
