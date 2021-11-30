@@ -72,6 +72,12 @@ WISER_SWITCHES = [
         "icon": "mdi:window-closed",
         "type": "room"
     },
+    {
+        "name": "Device Lock",
+        "key":  "device_lock_enabled",
+        "icon": "mdi:lock",
+        "type": "device"
+    },
 ]
 
 
@@ -93,6 +99,11 @@ async def async_setup_entry(hass, config_entry, async_add_entities):
             wiser_switches.append(
                 WiserSystemSwitch(data, switch["name"], switch["key"], switch["icon"])
             )
+        elif switch["type"] == "device":
+            for device in [device for device in data.wiserhub.devices.all if hasattr(device, switch["key"])]:
+                wiser_switches.append(
+                    WiserDeviceSwitch(data, switch["name"], switch["key"], switch["icon"], device.id )
+                )
         
     async_add_entities(wiser_switches)
 
@@ -355,6 +366,60 @@ class WiserRoomSwitch(WiserSwitch):
         """Return device specific attributes."""
         identifier = f"{self.data.wiserhub.system.name}-WiserRoom-{self._room_id}-Wiser {self.data.wiserhub.rooms.get_by_id(self._room_id).name}"
 
+        return {
+            "identifiers": {(DOMAIN, identifier)},
+            "via": self.data.wiserhub.system.name,
+        }
+
+    @property
+    def extra_state_attributes(self):
+        """Return the device state attributes for the attribute card."""
+        attrs = {}
+        return attrs
+
+class WiserDeviceSwitch(WiserSwitch):
+    """Switch to set the status of a TRV/Roomstat switch"""
+
+    def __init__(self, data, name, key, icon, device_id):
+        """Initialize the sensor."""
+        super().__init__(data, name, key, icon)
+        self._device_id = device_id
+
+    async def async_update(self):
+        """Async Update to HA."""
+        _LOGGER.debug("Wiser %s Switch Update requested", self._name)
+        self._is_on = getattr(self.data.wiserhub.devices.get_by_id(self._device_id), self._key)
+
+    @property
+    def name(self):
+        """Return the name of the Device."""
+        return f"Wiser {self.data.wiserhub.devices.get_by_id(self._device_id).name} {self._name}"
+
+    async def async_turn_on(self, **kwargs):
+        """Turn the device on."""
+        await self.hass.async_add_executor_job(
+            setattr, self.data.wiserhub.devices.get_by_id(self._device_id), self._key, True
+        )
+        await self.async_force_update()
+        return True
+
+    async def async_turn_off(self, **kwargs):
+        """Turn the device off."""
+        await self.hass.async_add_executor_job(
+            setattr, self.data.wiserhub.devices.get_by_id(self._device_id), self._key, False
+        )
+        await self.async_force_update()
+        return True
+
+    @property
+    def unique_id(self):
+        """Return unique Id."""
+        return f"{self.data.wiserhub.system.name}-{self.data.wiserhub.devices.get_by_id(self._device_id).product_type}-{self._device_id}-{self._name}"
+
+    @property
+    def device_info(self):
+        """Return device specific attributes."""
+        identifier = f"{self.data.wiserhub.system.name}-{self.data.wiserhub.devices.get_by_id(self._device_id).product_type}-{self._device_id}"
         return {
             "identifiers": {(DOMAIN, identifier)},
             "via": self.data.wiserhub.system.name,
