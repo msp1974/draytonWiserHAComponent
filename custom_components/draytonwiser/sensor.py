@@ -16,6 +16,7 @@ from .const import (
     _LOGGER,
     DATA,
     DOMAIN,
+    MANUFACTURER,
     SIGNAL_STRENGTH_ICONS,
 )
 
@@ -122,9 +123,6 @@ class WiserBatterySensor(WiserSensor):
 
         super().__init__(data, device_id, sensor_type)
         self._device_name = self.get_device_name()
-        # Set default state to unknown to show this value if battery info
-        # cannot be read.
-        #self._data = data
         self._state = "Unknown"
         self._battery_voltage = 0
         self._battery_level = None
@@ -133,13 +131,7 @@ class WiserBatterySensor(WiserSensor):
     async def async_update(self):
         """Fetch new state data for the sensor."""
         await super().async_update()
-
-        device = self.data.wiserhub.devices.get_by_id(self._device_id)
-
-        # Set battery info
-        self._battery_level = device.battery.level
-        self._battery_voltage = device.battery.voltage
-        self._state = device.battery.percent
+        self._state = self.data.wiserhub.devices.get_by_id(self._device_id).battery.percent
 
     @property
     def device_class(self):
@@ -155,9 +147,9 @@ class WiserBatterySensor(WiserSensor):
     def extra_state_attributes(self):
         """Return the state attributes of the battery."""
         attrs = {}
-        if self._battery_voltage > 0:
-            attrs["battery_voltage"] = self._battery_voltage
-            attrs[ATTR_BATTERY_LEVEL] = self._battery_level
+        device = self.data.wiserhub.devices.get_by_id(self._device_id)
+        attrs["battery_voltage"] = device.battery.voltage
+        attrs[ATTR_BATTERY_LEVEL] = device.battery.level
         return attrs
 
     def get_device_name(self):
@@ -223,7 +215,7 @@ class WiserDeviceSensor(WiserSensor):
         info = {
             "name": self.name,
             "identifiers": {(DOMAIN, self.unique_id)},
-            "manufacturer": "Drayton Wiser",
+            "manufacturer": MANUFACTURER,
             "model": self.data.wiserhub.devices.get_by_id(self._device_id).product_type,
             "sw_version": self.data.wiserhub.devices.get_by_id(self._device_id).firmware_version,
             "via_device": (DOMAIN, self.data.wiserhub.system.name),
@@ -282,10 +274,9 @@ class WiserDeviceSensor(WiserSensor):
         device_data = self.data.wiserhub.devices.get_by_id(self._device_id)
 
         # Generic attributes
-        attrs["vendor"] = "Drayton Wiser"
+        attrs["vendor"] = MANUFACTURER
         attrs["product_type"] = device_data.product_type
         attrs["model_identifier"] = device_data.model
-        #attrs["device_lock_enabled"] = device_data.get("DeviceLockEnabled")
         attrs["displayed_signal_strength"] = device_data.signal.displayed_signal_strength
         attrs["firmware"] = device_data.firmware_version
         attrs["serial_number"] = device_data.serial_number
@@ -307,8 +298,7 @@ class WiserDeviceSensor(WiserSensor):
                 attrs["hub_route"] = "direct"
             else:
                 attrs["hub_route"] = "repeater"
-                # Make name of device - needs mod to api
-                #attrs["hub_route"] = self.data.wiserhub.get_device_by_id(device_data.parent_node_id).name
+                attrs["repeater"] = self.data.wiserhub.devices.get_by_node_id(device_data.parent_node_id).name
 
 
         if device_data.signal.device_reception_rssi is not None:
@@ -386,6 +376,7 @@ class WiserSystemCircuitState(WiserSensor):
             heating_channel = self.data.wiserhub.heating_channels.get_by_id(self._device_id)
             attrs[f"percentage_demand_{heating_channel.name}"] = heating_channel.percentage_demand
             attrs[f"room_ids_{heating_channel.name}"] = heating_channel.room_ids
+            attrs[f"is_smartvalve_preventing_demand_{heating_channel.name}"] = heating_channel.is_smart_valve_preventing_demand
         else:
             hw = self.data.wiserhub.hotwater
             # If boosted show boost end time
@@ -406,7 +397,7 @@ class WiserSystemCloudSensor(WiserSensor):
         """Initialise the cloud sensor."""
 
         super().__init__(data, device_id, sensor_type)
-        self._device_name = self.get_device_name()
+        self._device_name = "Wiser Cloud Status"
         _LOGGER.info("%s device init", self._device_name)
 
     async def async_update(self):
@@ -421,11 +412,6 @@ class WiserSystemCloudSensor(WiserSensor):
             "identifiers": {(DOMAIN, self.data.unique_id)},
             "via_device": (DOMAIN, self.data.wiserhub.system.name),
         }
-
-    @staticmethod
-    def get_device_name():
-        """Return the name of the Device."""
-        return "Wiser Cloud Status"
 
     @property
     def icon(self):
@@ -442,7 +428,7 @@ class WiserSystemOperationModeSensor(WiserSensor):
         """Initialise the operation mode sensor."""
 
         super().__init__(data, device_id, sensor_type)
-        self._device_name = self.get_device_name()
+        self._device_name = "Wiser Operation Mode"
         #self._override_type = self.data.wiserhub.getSystem().get("OverrideType")
         self._away_temperature = self.data.wiserhub.system.away_mode_target_temperature
         _LOGGER.info("%s device init", self._device_name)
@@ -468,11 +454,6 @@ class WiserSystemOperationModeSensor(WiserSensor):
             return "Away"
         return "Normal"
 
-    @staticmethod
-    def get_device_name():
-        """Return the name of the Device."""
-        return "Wiser Operation Mode"
-
     @property
     def icon(self):
         """Return icon."""
@@ -483,13 +464,5 @@ class WiserSystemOperationModeSensor(WiserSensor):
     @property
     def extra_state_attributes(self):
         """Return the device state attributes."""
-        attrs = {"AwayModeTemperature": -1.0}
-        if self._away_temperature:
-            try:
-                attrs["AwayModeTemperature"] = round(self._away_temperature / 10.0, 1)
-            except Exception:  # pylint: disable=broad-except
-                _LOGGER.debug(
-                    "Exception Unexpected value for awayTemperature %s",
-                    self._away_temperature,
-                )
+        attrs = {"AwayModeTemperature": self._away_temperature}
         return attrs
