@@ -55,6 +55,7 @@ SIGNAL_STRENGTH_ICONS = {
 
 WISER_SERVICES = {
     "SERVICE_BOOST_HEATING": "boost_heating",
+    "SERVICE_ADVANCE_SCHEDULE": "advance_schedule",
     "SERVICE_COPY_SCHEDULE": "copy_schedule",
     "SERVICE_GET_SCHEDULE": "get_schedule",
     "SERVICE_SET_SCHEDULE": "set_schedule",

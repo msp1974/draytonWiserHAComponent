@@ -107,6 +107,12 @@ async def async_setup_entry(hass, config_entry, async_add_entities):
         )
 
         platform.async_register_entity_service(
+            WISER_SERVICES["SERVICE_ADVANCE_SCHEDULE"],
+            {},
+            "async_advance_schedule"
+        )
+
+        platform.async_register_entity_service(
             WISER_SERVICES["SERVICE_GET_SCHEDULE"],
             {
                 vol.Optional(ATTR_FILENAME, default=""): vol.Coerce(str),
@@ -336,6 +342,14 @@ class WiserRoom(ClimateEntity):
         """Boost heating for room"""
         await self.hass.async_add_executor_job(
             self._room.boost, temperature, time_period
+        )
+        await self.async_force_update()
+
+    @callback
+    async def async_advance_schedule(self) -> None:
+        """Advance to next schedule setting for room"""
+        await self.hass.async_add_executor_job(
+            self._room.set_target_temperature, self._room.schedule.next.setting
         )
         await self.async_force_update()
 

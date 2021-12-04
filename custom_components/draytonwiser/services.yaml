@@ -49,6 +49,14 @@ boost_hotwater:
           step: 1
           mode: box
 
+advance_schedule:
+  name: Advance Room Schedule
+  description: >
+    Overrides the room temperature to the next scheduled temperature. 
+  target:
+    entity:
+      domain: climate
+
 get_schedule:
   name: Save Schedule to File
   description: >
