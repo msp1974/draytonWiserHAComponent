@@ -349,7 +349,7 @@ class WiserRoom(ClimateEntity):
     async def async_advance_schedule(self) -> None:
         """Advance to next schedule setting for room"""
         await self.hass.async_add_executor_job(
-            self._room.set_target_temperature, self._room.schedule.next.setting
+            self._room.schedule_advance
         )
         await self.async_force_update()
 
