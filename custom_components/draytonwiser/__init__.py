@@ -47,7 +47,6 @@ from homeassistant.helpers.event import async_track_time_interval
 from homeassistant.util import Throttle
 
 from .const import (
-    _LOGGER,
     CONF_SETPOINT_MODE,
     DEFAULT_SETPOINT_MODE,
     CONF_HEATING_BOOST_TEMP,
@@ -58,7 +57,6 @@ from .const import (
     DEFAULT_BOOST_TEMP_TIME,
     DEFAULT_SCAN_INTERVAL,
     DOMAIN,
-    HUBNAME,
     MANUFACTURER,
     UPDATE_LISTENER,
     UPDATE_TRACK,
@@ -66,6 +64,7 @@ from .const import (
     WISER_PLATFORMS,
     WISER_SERVICES,
 )
+from .helpers import get_device_name, get_identifier
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -310,12 +309,13 @@ class WiserHubHandle:
         device_registry.async_get_or_create(
             config_entry_id=self._config_entry.entry_id,
             connections={(CONNECTION_NETWORK_MAC, self.wiserhub.system.network.mac_address)},
-            identifiers={(DOMAIN, self.unique_id)},
+            identifiers={(DOMAIN, get_identifier(self, 0))},
             manufacturer=MANUFACTURER,
-            name=HUBNAME + f" ({self.wiserhub.system.name})",
+            name=get_device_name(self, 0),
             model=self.wiserhub.system.model,
             sw_version=self.wiserhub.system.firmware_version,
         )
+       
 
     @callback
     async def async_remove_orphaned_entries(self, entry_id, wiser_hub_id: str):

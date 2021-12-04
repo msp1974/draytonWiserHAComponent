@@ -1,6 +1,6 @@
 {
     "config": {
-        "flow_title": "Wiser Heat Hub: ",
+        "flow_title": "{name}",
         "step": {
             "user": {
                 "title": "Wiser Heat Hub Setup",

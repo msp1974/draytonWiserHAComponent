@@ -5,10 +5,6 @@ https://github.com/asantaga/wiserHomeAssistantPlatform
 Angelosantagata@gmail.com
 
 """
-import logging
-
-_LOGGER = logging.getLogger(__name__)
-
 DOMAIN = "draytonwiser"
 DATA_WISER_CONFIG = "wiser_config"
 VERSION = "3.1.0"
@@ -19,8 +15,8 @@ UPDATE_TRACK = "update_track"
 UPDATE_LISTENER = "update_listener"
 
 # Hub
-HUBNAME = "Wiser Heat Hub"
 MANUFACTURER = "Drayton Wiser"
+ENTITY_PREFIX = "Wiser"
 ROOM = "Room"
 
 # Notifications
