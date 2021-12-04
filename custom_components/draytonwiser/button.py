@@ -119,7 +119,7 @@ class WiserBoostHotWaterButton(WiserButton):
         super().__init__(data, "Boost Hot Water")
 
     async def async_press(self):
-        boost_time = self.data.hw_boost_time
+        boost_time = self._data.hw_boost_time
         await self.hass.async_add_executor_job(
             self._data.wiserhub.hotwater.boost, boost_time
         )

@@ -61,7 +61,7 @@ class WiserSelectEntity(SelectEntity):
         _LOGGER.info(f"{self._data.wiserhub.system.name} {self.name} init")
 
     async def async_force_update(self):
-        await self.data.async_update(no_throttle=True)
+        await self._data.async_update(no_throttle=True)
 
     @property
     def should_poll(self):
