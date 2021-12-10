@@ -7,7 +7,8 @@ Angelosantagata@gmail.com
 """
 from datetime import datetime
 import logging
-from homeassistant.const import ATTR_BATTERY_LEVEL, DEVICE_CLASS_BATTERY
+from homeassistant.components.sensor import STATE_CLASS_MEASUREMENT
+from homeassistant.const import ATTR_BATTERY_LEVEL, DEVICE_CLASS_BATTERY, DEVICE_CLASS_TEMPERATURE, TEMP_CELSIUS, DEVICE_CLASS_POWER_FACTOR, PERCENTAGE
 from homeassistant.helpers.dispatcher import async_dispatcher_connect
 from homeassistant.helpers.entity import Entity
 from homeassistant.helpers import config_validation as cv, entity_platform, service
@@ -32,40 +33,64 @@ SELECT_HUB_SCHEMA = vol.All(vol.Schema({vol.Optional(CONF_HUB_ID): str}))
 async def async_setup_entry(hass, config_entry, async_add_entities):
     """Initialize the entry."""
     data = hass.data[DOMAIN][config_entry.entry_id][DATA]  # Get Handler
-    wiser_devices = []
+    wiser_sensors = []
+
     hub_devices = data.wiserhub.devices.all
 
-    # Add device sensors for all devices
-    if data.wiserhub.devices.count > 0:
+    # Add signal sensors for all devices
+    if data.wiserhub.devices:
         for device in data.wiserhub.devices.all:
-            wiser_devices.append(
+            wiser_sensors.append(
                 WiserDeviceSensor(data, device.id, device.product_type)
             )
             if hasattr(device, "battery"):
-                wiser_devices.append(
-                        WiserBatterySensor(data, device.id, sensor_type="Battery")
+                wiser_sensors.append(
+                        WiserBatterySensor(data, device.id, sensor_type = "Battery")
                 )
     
     # Add cloud status sensor
-    wiser_devices.append(WiserSystemCloudSensor(data, sensor_type="Cloud"))
+    wiser_sensors.append(WiserSystemCloudSensor(data, sensor_type = "Cloud"))
 
     # Add operation sensor
-    wiser_devices.append(
-        WiserSystemOperationModeSensor(data, sensor_type="Operation Mode")
+    wiser_sensors.append(
+        WiserSystemOperationModeSensor(data, sensor_type = "Operation Mode")
     )
+
     # Add heating circuit sensor
-    if data.wiserhub.heating_channels.count > 0:
+    if data.wiserhub.heating_channels:
+        _LOGGER.info(f"{data.wiserhub.system.name} - Heating LTS")
         for heating_channel in data.wiserhub.heating_channels.all:
-                wiser_devices.append(
-                    WiserSystemCircuitState(data, heating_channel.id, sensor_type="Heating")
+                wiser_sensors.append(
+                    WiserSystemCircuitState(data, heating_channel.id, sensor_type = "Heating")
                 )
     
-    # Don't display Hotwater if hotwater not supported
-    # https://github.com/asantaga/wiserHomeAssistantPlatform/issues/8
-    if data.wiserhub.hotwater is not None:
-        wiser_devices.append(WiserSystemCircuitState(data, sensor_type="Hot Water"))
+    # Add hot water sensors if supported on hub
+    if data.wiserhub.hotwater:
+        wiser_sensors.append(WiserSystemCircuitState(data, sensor_type = "Hot Water"))
 
-    async_add_entities(wiser_devices, True)
+
+    # Add LTS sensors - for room temp and target temp
+    if data.enable_lts_sensors:
+        for temp_device in data.wiserhub.rooms.all:
+            wiser_sensors.extend([
+                WiserLTSTempSensor(data, temp_device.id, sensor_type = "current_temp"),
+                WiserLTSTempSensor(data, temp_device.id, sensor_type = "current_target_temp"),
+                WiserLTSDemandSensor(data, temp_device.id, "room")
+            ])
+
+        # Add heating channels demand
+        for channel in data.wiserhub.heating_channels.all:
+            wiser_sensors.append(
+                WiserLTSDemandSensor(data, channel.id, "heating")
+            )
+        
+        #Add hotwater demand
+        if data.wiserhub.hotwater:
+            wiser_sensors.append(
+                WiserLTSDemandSensor(data, 0, "hotwater")
+            )
+
+    async_add_entities(wiser_sensors, True)
 
 
 class WiserSensor(Entity):
@@ -377,3 +402,108 @@ class WiserSystemOperationModeSensor(WiserSensor):
         """Return the device state attributes."""
         attrs = {"AwayModeTemperature": self._away_temperature}
         return attrs
+
+
+class WiserLTSTempSensor(WiserSensor):
+    """Sensor for long term stats for room temp and target temp"""
+
+    def __init__(self, data, id, sensor_type=""):
+        """Initialise the operation mode sensor."""
+        self._temp_device = data.wiserhub.rooms.get_by_id(id)
+        self.lts_sensor_type = sensor_type
+        if self.lts_sensor_type == "current_temp":
+            super().__init__(data, id, f"LTS Temperature {self._temp_device.name}")
+        else:
+            super().__init__(data, id, f"LTS Target Temperature {self._temp_device.name}")
+    
+    async def async_update(self):
+        """Fetch new state data for the sensor."""
+        await super().async_update()
+        if self.lts_sensor_type == "current_temp":
+            self._state = self._temp_device.current_temperature
+        else:
+            self._state = self._temp_device.current_target_temperature
+
+    @property
+    def device_info(self):
+        """Return device specific attributes."""
+        return {
+                "name": get_device_name(self._data, self._device_id,"room"),
+                "identifiers": {(DOMAIN, get_identifier(self._data, self._device_id,"room"))},
+                "manufacturer": MANUFACTURER,
+                "model": "Room",
+                "via_device": (DOMAIN, self._data.wiserhub.system.name),
+            }
+
+    @property
+    def device_class(self):
+        return DEVICE_CLASS_TEMPERATURE
+
+    @property
+    def state_class(self):
+        return STATE_CLASS_MEASUREMENT
+
+    @property
+    def unit_of_measurement(self):
+        return TEMP_CELSIUS
+
+    @property
+    def entity_category(self):
+        return 'diagnostic'
+
+
+class WiserLTSDemandSensor(WiserSensor):
+    """Sensor for long term stats for room temp and target temp"""
+
+    def __init__(self, data, id, sensor_type=""):
+        """Initialise the operation mode sensor."""
+        self._lts_sensor_type = sensor_type
+        self._temp_device = None
+        if self._lts_sensor_type == "heating":
+            super().__init__(data, id, f"LTS Heating Demand Channel {id}")
+        elif self._lts_sensor_type == "hotwater":
+            super().__init__(data, id, f"LTS Hot Water Demand")
+        else:
+            # Assume room demand
+            self._temp_device = data.wiserhub.rooms.get_by_id(id)
+            super().__init__(data, id, f"LTS Heating Demand {self._temp_device.name}")
+    
+    async def async_update(self):
+        """Fetch new state data for the sensor."""
+        await super().async_update()
+        if self._lts_sensor_type == "heating":
+            self._state = self._data.wiserhub.heating_channels.get_by_id(self._device_id).percentage_demand
+        elif self._lts_sensor_type == "hotwater":
+            self._state = 100 if self._data.wiserhub.hotwater.is_heating else 0
+        else:
+            self._state = self._temp_device.percentage_demand
+
+    @property
+    def device_info(self):
+        """Return device specific attributes."""
+        if self._lts_sensor_type in ["heating", "hotwater"]:
+            return super().device_info
+        else:
+            return {
+                    "name": get_device_name(self._data, self._device_id,"room"),
+                    "identifiers": {(DOMAIN, get_identifier(self._data, self._device_id,"room"))},
+                    "manufacturer": MANUFACTURER,
+                    "model": "Room",
+                    "via_device": (DOMAIN, self._data.wiserhub.system.name),
+                }
+
+    @property
+    def device_class(self):
+        return DEVICE_CLASS_POWER_FACTOR
+
+    @property
+    def state_class(self):
+        return STATE_CLASS_MEASUREMENT
+
+    @property
+    def unit_of_measurement(self):
+        return PERCENTAGE
+
+    @property
+    def entity_category(self):
+        return 'diagnostic'

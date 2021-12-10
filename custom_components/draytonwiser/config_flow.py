@@ -24,6 +24,8 @@ from homeassistant.helpers.typing import DiscoveryInfoType
 from .const import (
     CONF_HEATING_BOOST_TEMP,
     CONF_HEATING_BOOST_TIME,
+    CONF_LTS_SENSORS,
+    CONF_MOMENTS,
     CONF_SETPOINT_MODE,
     CONF_HW_BOOST_TIME,
     DEFAULT_BOOST_TEMP,
@@ -227,6 +229,18 @@ class WiserOptionsFlowHandler(config_entries.OptionsFlow):
                         CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL
                     ),
                 ): int,
+                vol.Optional(
+                    CONF_MOMENTS,
+                    default=self.config_entry.options.get(
+                        CONF_MOMENTS, False
+                    ),
+                ): bool,
+                vol.Optional(
+                    CONF_LTS_SENSORS,
+                    default=self.config_entry.options.get(
+                        CONF_LTS_SENSORS, False
+                    ),
+                ): bool,
                 vol.Optional(
                     CONF_SETPOINT_MODE,
                     default=self.config_entry.options.get(

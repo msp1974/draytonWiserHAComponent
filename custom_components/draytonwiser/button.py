@@ -29,6 +29,10 @@ async def async_setup_entry(hass, config_entry, async_add_entities):
             WiserCancelBoostHotWaterButton(data)
         ])
 
+    if data.enable_moments and data.wiserhub.moments:
+        for moment in data.wiserhub.moments.all:
+            wiser_buttons.append(WiserMomentsButton(data, moment.id))
+
     async_add_entities(wiser_buttons, True)
 
 
@@ -143,3 +147,18 @@ class WiserCancelBoostHotWaterButton(WiserButton):
     @property
     def icon(self):
         return "mdi:timer-off"
+
+
+class WiserMomentsButton(WiserButton):
+    def __init__(self, data, moment_id):
+        super().__init__(data, f"Moments {data.wiserhub.moments.get_by_id(moment_id).name}")
+
+    async def async_press(self):
+        await self.hass.async_add_executor_job(
+            self._data.wiserhub.moments.get_by_id(self.id).activate
+        )
+        await self.async_force_update()
+
+    @property
+    def icon(self):
+        return "mdi:home-thermometer"

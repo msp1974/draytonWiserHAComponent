@@ -47,11 +47,13 @@ from homeassistant.helpers.event import async_track_time_interval
 from homeassistant.util import Throttle
 
 from .const import (
+    CONF_MOMENTS,
     CONF_SETPOINT_MODE,
     DEFAULT_SETPOINT_MODE,
     CONF_HEATING_BOOST_TEMP,
     CONF_HEATING_BOOST_TIME,
     CONF_HW_BOOST_TIME,
+    CONF_LTS_SENSORS,
     DATA,
     DEFAULT_BOOST_TEMP,
     DEFAULT_BOOST_TEMP_TIME,
@@ -258,6 +260,8 @@ class WiserHubHandle:
             CONF_HW_BOOST_TIME, DEFAULT_BOOST_TEMP_TIME
         )
         self.setpoint_mode = config_entry.options.get(CONF_SETPOINT_MODE, DEFAULT_SETPOINT_MODE)
+        self.enable_moments = config_entry.options.get(CONF_MOMENTS, False)
+        self.enable_lts_sensors = config_entry.options.get(CONF_LTS_SENSORS, False)
 
     def connect(self):
         """Connect to Wiser Hub."""

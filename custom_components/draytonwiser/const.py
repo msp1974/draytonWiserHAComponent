@@ -34,6 +34,8 @@ CONF_HEATING_BOOST_TEMP = "heating_boost_temp"
 CONF_HEATING_BOOST_TIME = "heating_boost_time"
 CONF_HW_BOOST_TIME = "hotwater_boost_time"
 CONF_SETPOINT_MODE = "setpoint_mode"
+CONF_MOMENTS = "moments"
+CONF_LTS_SENSORS = "lts_sensors"
 
 # Custom Attributes
 ATTR_TIME_PERIOD = "time_period"
