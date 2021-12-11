@@ -69,6 +69,12 @@ WISER_PRESET_TO_HASS = {
     "FromComfortMode": STATUS_COMFORT,
 }
 
+WISER_PRESETS = {
+    "Advance Schedule": 0,
+    "Cancel Overrides": 0
+}
+WISER_PRESETS.update(WISER_BOOST_PRESETS)
+
 HVAC_MODE_WISER_TO_HASS = {
         "Auto": HVAC_MODE_AUTO,
         "Manual": HVAC_MODE_HEAT,
@@ -245,20 +251,32 @@ class WiserRoom(ClimateEntity):
     @property
     def preset_modes(self):
         """Return the list of available preset modes."""
-        return list(WISER_BOOST_PRESETS.keys())
+        return list(WISER_PRESETS.keys())
 
     async def async_set_preset_mode(self, preset_mode):
         """Async call to set preset mode ."""
-        boost_time = WISER_BOOST_PRESETS[preset_mode]
-        boost_temp = self._data.boost_temp
-
         _LOGGER.debug(
-            "Setting Preset Mode %s for %s", preset_mode, self._room.name,
-        )
-        
-        await self.hass.async_add_executor_job(
-            self._room.boost, boost_temp, boost_time
-        )
+                "Setting Preset Mode %s for %s", preset_mode, self._room.name,
+            )
+        if preset_mode == "Advance Schedule":
+            if self._room.is_boosted:
+                await self.hass.async_add_executor_job(
+                    self._room.cancel_boost
+                )
+            
+            await self.hass.async_add_executor_job(
+                self._room.schedule_advance
+            )
+        elif WISER_PRESETS[preset_mode] == 0:
+            await self.hass.async_add_executor_job(
+                self._room.cancel_overrides
+            )
+        else:
+            boost_time = WISER_PRESETS[preset_mode]
+            boost_temp = self._data.boost_temp
+            await self.hass.async_add_executor_job(
+                self._room.boost, boost_temp, boost_time
+            )
         
         await self.async_force_update()
         return True
@@ -305,6 +323,8 @@ class WiserRoom(ClimateEntity):
     @property
     def target_temperature(self):
         """Return target temp."""
+        if self._room.mode == "Off":
+            return None
         return self._room.current_target_temperature
 
     async def async_set_temperature(self, **kwargs):
