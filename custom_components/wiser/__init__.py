@@ -216,8 +216,7 @@ async def async_unload_entry(hass, config_entry):
     """
     # Deregister services
     _LOGGER.debug("Unregister Wiser Services")
-    for service in WISER_SERVICES:
-        hass.services.async_remove(DOMAIN, WISER_SERVICES[service])
+    hass.services.async_remove(DOMAIN, SERVICE_REMOVE_ORPHANED_ENTRIES)
 
     _LOGGER.debug("Unloading Wiser Component")
     # Unload a config entry

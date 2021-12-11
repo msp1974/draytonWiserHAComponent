@@ -446,7 +446,9 @@ class WiserLTSTempSensor(WiserSensor):
         """Return icon for sensor"""
         if self._lts_sensor_type == "hotwater":
             return "mdi:water-boiler"
-        return "mdi:radiator"
+        if self._lts_sensor_type == "current_temp":
+            return "mdi:home-thermometer"
+        return "mdi:home-thermometer-outline"
 
     @property
     def native_unit_of_measurement(self):

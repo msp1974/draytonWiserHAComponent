@@ -5,7 +5,7 @@ https://github.com/asantaga/wiserHomeAssistantPlatform
 Angelosantagata@gmail.com
 
 """
-DOMAIN = "draytonwiser"
+DOMAIN = "wiser"
 DATA_WISER_CONFIG = "wiser_config"
 VERSION = "3.1.0"
 WISER_PLATFORMS = ["climate", "sensor", "switch", "select"]

@@ -15,12 +15,11 @@ from wiserHeatAPIv2.wiserhub import (
     WiserHubRESTError,
 )
 
-from homeassistant import config_entries, exceptions, data_entry_flow
+from homeassistant import config_entries, exceptions
 from homeassistant.components import zeroconf
-from homeassistant.const import CONF_HOST, CONF_NAME, CONF_PORT, CONF_PASSWORD, CONF_SCAN_INTERVAL
+from homeassistant.const import CONF_HOST, CONF_NAME, CONF_PASSWORD, CONF_SCAN_INTERVAL
 from homeassistant.core import callback
 from homeassistant.data_entry_flow import FlowResult
-from homeassistant.helpers.typing import DiscoveryInfoType
 
 from .const import (
     CONF_HEATING_BOOST_TEMP,
