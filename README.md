@@ -155,7 +155,7 @@ Mark & Angelo
 
 ## Sample Images
 
-![](https://raw.githubusercontent.com/asantaga/wiserHomeAssistantPlatform/master/docs/homeassistant_sample.jpg)
+![](docs/screenshotv3.PNG)
 
 
 # Code Installation
@@ -190,44 +190,32 @@ Reference https://it.knightnet.org.uk/kb/nr-qa/drayton-wiser-heating-control/#co
 Before you can use the component you need to find the HeatHub secret key, this involves a couple of steps.
 
 
-1. Press the setup button on your HeatHub, the light will start flashing
+1. On your hub, press the setup button and the led should flash.
+2. Use your phone or tablet and connect to the wifi SSID (you should now see available) that is Wiserxx_xxxxxx
+3. Once connected to this wifi network, open your browser and go to http://192.168.8.1/secret 1.
+4. You can then copy your key to an email to send to another device or copy and paste into the HA config if setting up integration via your phone/tablet.
+5. When finished, either wait for hub to revert to led on constant or repower it (quicker to repower). Must be in non flashing mode to setup integration.
 
-2. Look for the Wi-Fi network (SSID) called **‘WiserHeatXXX’** where XXX is random
-
-3. Connect to the network from a Windows/Linux/Mac machine
-
-4. Execute the following REST call 
-   * For Windows use
-      `Invoke-RestMethod -Method Get -UseBasicParsing -Uri http://192.168.8.1/secret/` 
-   * For Linux (or Windows WSL) use 
-     `curl http://192.168.8.1/secret`
-
-   This will return a string which will contain your system secret, obviously dont share this...
-
-5. Press the setup button on the HeatHub again and it will go back to normal operations
-
-6. Copy the secret and save it somewhere.
-
-7. Find Your HEATHUB IP
-    Using your router, or some other method, identify the IP address of your HeatHub. On many routers it usually identifies itself as the something like ``WiserHeatXXXXXX`` 
-
-    **We recommend you configure your router so that it assigns a FIXED IP address to the Wiser HeatHub. Whilst it "shouldnt" change IP address some people have noticed it has/does, perhaps when wiser issue a firmware update. Most routers allow you to reserve an IP address to a MAC address, this setting is often (like on Virgin Media Routers) done in the DHCP section.**   
-
-8. Configure using Home Assistant Configuration Assistant "Set up new integration"
+6. Configure using Home Assistant Configuration -> Integrations where your hub should have been auto discovered
 
     ![](docs/add_configuration_image.png)
 
 9. This will then show the config screen for Wiser Heat Hub, now configure it appropriately.
 
-    ![](Z:\src\ha_dev\venv_wiser\homeassistant\src\docs\add_configuration_image2.png)
 
-    ```minimum``` is the bottom minimum temperature to be recorded, the default is -5
+    ```Default Heating Boost Temperature``` is the delta temperature above the current room temperature the radiator should be set to when boosted, default is 2
 
-    ```boost_temp``` is the delta temperature the radiator should be set to when boosted, default is 2
+    ```Default Heating Boost Duration``` is the time (in minutes) for which a heating boost should be active for, default is 60 mins
 
-    ```boost_time``` is the time (in seconds) for which a boost should be active for, default is 30mins
+    ```Default Hot Water Boost Duration``` is the time (in minutes) for which a hot water boost should be active for, default is 60 mins
 
-    ```setpoint_mode``` modifies the way setpoint works. If left to default the n the functionality is the same as the Wiser app, if set to 'boost' then when you set a new setpoint it will only take affect for the normal "boost" time.
+    ```Scan Interval``` is the interval in second that the integration will update form the hub.  Do not set this too low as the hub will not be able to cope and you will see errors.  Default is 30.
+
+    ```Enable Moments Buttons``` is to create buttons for Moments you have setup on the wiser app.  Default is unticked.
+
+    ```Enable LTS Sensors``` is to create sensors for LTS for rooms and hub heating and hot water demand.  Default is unticked.
+
+    ```Setpoint Mode``` modifies the way setpoint works. If left to default then the functionality is the same as the Wiser app, if set to 'boost' then when you set a new setpoint it will only take affect for the default "boost" time.
 
 10. When added, you should something like see this in integrations
     ![](Z:\src\ha_dev\venv_wiser\homeassistant\src\docs\add_configuration_image3.png)
@@ -235,17 +223,6 @@ Before you can use the component you need to find the HeatHub secret key, this i
 11. Clicking on it should show you this and you can now add the devices to your Home Assistant Lovelace UI as you please
      ![](Z:\src\ha_dev\venv_wiser\homeassistant\src\docs\add_configuration_image4.png)
 
-12. **Alternatively** you can also configure the integration using YAML. Here is a sample config, replace the HEATHUB AND PASSWORD appropriately.
-
-```yaml
-wiser:
-  host: <ENTER YOUR HEATHUB IP HERE>
-  password: <ENTER YOUR SECRET TOKEN, OBTAINED FROM STEP THREE HERE>
-  scan_interval: 300
-  minimum: -5
-  boost_temp: 2
-  boost_time: 30
-```
 
 
 ## Managing Schedules with Home Assistant
@@ -440,15 +417,16 @@ Each TRV sensor now has three special network related attributes
 
 | Attribute        | Meaning                                                      |
 | ---------------- | ------------------------------------------------------------ |
-| `node_id`        | The node Id of the device                                    |
-| `parent_node_id` | If this value is zero (0) then the device is connected direct to the heathub. A non zero value points to the smartplug/repeater for which this device is being routed through. Smartplugs always have this value as zero |
-| `hub_route`      | Calculated convenience attribute which the evaluates to either `direct` or `repeater` based on if the device is connected direct or not to the heathub |
+| `Node Id`        | The node Id of the device                                    |
+| `Parent Node Id` | If this value is zero (0) then the device is connected direct to the heathub. A non zero value points to the smartplug/repeater for which this device is being routed through. Smartplugs always have this value as zero |
+| `Hub Route`      | Calculated convenience attribute which the evaluates to either `direct` or `repeater` based on if the device is connected direct or not to the heathub |
+| `Repeater` | Which actual smartplug is actiing as repeater |
 
 
 
 ## Battery Values
 
-For each battery driven device sensor the following attributes are available `battery_voltage`, `battery_percentage` and `battery_level`. From conversations with Wiser technical support they recommend changing the batteries for any TRV when it reaches battery voltage of "26" or *OneThird* battery level. Given that RoomStats do not need to drive a valve, their battery levels can be lower.
+For each battery driven device sensor the following attributes are available `Battery Voltage`, `Battery Percentage` and `Battery Level`. From conversations with Wiser technical support they recommend changing the batteries for any TRV when it reaches battery voltage of "26" or *OneThird* battery level. Given that RoomStats do not need to drive a valve, their battery levels can be lower.
 
 An obvious ideal candidate for a Home Assistant automation to remind you to change the batteries :-)
 
@@ -484,6 +462,8 @@ Special thanks to all the contributors to this project.  Special shout to
 Moving forward (post 1.9) there will be two primary branches, `master` and `dev` . Master will be the primary "production" branch and "dev" will be the branch used for development. Other branches will likely exist where we build code into and then merge into dev, which in turn gets merged into master when all is good and dandy.
 
 # Change log
+- 3.0
+    * See above for long list of new functionality
 - 2.6beta6
    * Fix for broken scheduler services - sorry all!
 - 2.6beta5
