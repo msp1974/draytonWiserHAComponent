@@ -57,10 +57,13 @@ Below is a list of the new features in this upgrade (these are in addition to th
     - Long term stats sensors for temp, target_temp and room demand - see LTS sensors below
     - Displays remaining boost time for room on climate entity
     - Shows if EcoIQ or Comfort mode is driving room demand on climate entity
+    - Arributes now show next temp setting and time from schedule
+    - Attributes for is_boosted, is_override and is_heating to help with automations
 - Device Functions
     - Turn on/off device lock
     - Enable identify function to flash leds on TRV
     - Drop down selector to set smartplug mode
+    - Device attributes now shows which smartplug is the zwave repeater
 - Services
     - Majority of services now utilise new HA functionality to make using them in scripts and automations much easier through the UI.
     - New service to remove devices from HA if you have removed Rooms or Devices from Wiser
