@@ -198,38 +198,36 @@ Before you can use the component you need to find the HeatHub secret key, this i
 
 6. Configure using Home Assistant Configuration -> Integrations where your hub should have been auto discovered
 
-    ![](docs/add_configuration_image.png)
-
-9. This will then show the config screen for Wiser Heat Hub, now configure it appropriately.
+![](docs/setupIntegration.PNG)
 
 
-    ```Default Heating Boost Temperature``` is the delta temperature above the current room temperature the radiator should be set to when boosted, default is 2
 
-    ```Default Heating Boost Duration``` is the time (in minutes) for which a heating boost should be active for, default is 60 mins
 
-    ```Default Hot Water Boost Duration``` is the time (in minutes) for which a hot water boost should be active for, default is 60 mins
+## Config Options
+Select the configure link from the integrations page.  This will then show the config screen - now configure it appropriately.
 
-    ```Scan Interval``` is the interval in second that the integration will update form the hub.  Do not set this too low as the hub will not be able to cope and you will see errors.  Default is 30.
+![](docs/configure.PNG)
 
-    ```Enable Moments Buttons``` is to create buttons for Moments you have setup on the wiser app.  Default is unticked.
+`Default Heating Boost Temperature` is the delta temperature above the current room temperature the radiator should be set to when boosted, default is 2
 
-    ```Enable LTS Sensors``` is to create sensors for LTS for rooms and hub heating and hot water demand.  Default is unticked.
+`Default Heating Boost Duration` is the time (in minutes) for which a heating boost should be active for, default is 60 mins
 
-    ```Setpoint Mode``` modifies the way setpoint works. If left to default then the functionality is the same as the Wiser app, if set to 'boost' then when you set a new setpoint it will only take affect for the default "boost" time.
+`Default Hot Water Boost Duration` is the time (in minutes) for which a hot water boost should be active for, default is 60 mins
 
-10. When added, you should something like see this in integrations
-    ![](Z:\src\ha_dev\venv_wiser\homeassistant\src\docs\add_configuration_image3.png)
+`Scan Interval` is the interval in second that the integration will update form the hub.  Do not set this too low as the hub will not be able to cope and you will see errors.  Default is 30.
 
-11. Clicking on it should show you this and you can now add the devices to your Home Assistant Lovelace UI as you please
-     ![](Z:\src\ha_dev\venv_wiser\homeassistant\src\docs\add_configuration_image4.png)
+`Enable Moments Buttons` is to create buttons for Moments you have setup on the wiser app.  Default is unticked.
 
+`Enable LTS Sensors` is to create sensors for LTS for rooms and hub heating and hot water demand.  Default is unticked.
+
+`Setpoint Mode` modifies the way setpoint works. If left to default then the functionality is the same as the Wiser app, if set to 'boost' then when you set a new setpoint it will only take affect for the default "boost" time.
 
 
 ## Managing Schedules with Home Assistant
 
 
 ### Getting a Schedule
-Use the service `wiser.get_schedule`
+Use the service `Save Schedule To File`
 
 This will require you to provide the entity ID of the wiser device and a file to copy this schedule to.
 It is recommended to create a directory in your config directory to store these.  
@@ -237,15 +235,15 @@ See below for information on selecting the correct entity.
 
 Note : If you are running HA within a docker container then the directory will be absolute to the container, if you have mapped the config directory to a local directory then all is good but the directory name given to the service must be a docker container address.
 
-E.g. if you specify the filename as `/config/schedule.yaml` then `get_schedule` writes the file into the directory within the container. Providing you have mapped the config directory (using the -v or volumes: in docker-compose) then you can read this from a host directory (e.g. /home/haconfig.
+E.g. if you specify the filename as `/config/schedule.yaml` then `Save Schedule to File` writes the file into the directory within the container. Providing you have mapped the config directory (using the -v or volumes: in docker-compose) then you can read this from a host directory (e.g. /home/haconfig.
 
 ### Setting a Schedule
-Use the service `wiser.set_schedule`
+Use the service `Set Schedule From File`
 
 This will require you to provide the entity ID of the wiser device and a file containing the schedule.  
 See below for information on selecting the correct entity.
 
-A good place to start is to get a schedule from a device and see the file structure.  You can add times and temps within each day as you see fit.  As file created using the `wiser.get_schedule` service looks like below:
+A good place to start is to get a schedule from a device and see the file structure.  You can add times and temps within each day as you see fit.  As file created using the `Save Schedule To File` service looks like below:
 ```yaml
 Name: Dining Room
 Description: Schedule for Dining Room
@@ -398,7 +396,7 @@ Tuesday:
 
 
 ### Copying a Schedule
-Use the service `wiser.copy_schedule`
+Use the service `Copy Schedule`
 
 This will require you to provide an entity ID of the device to copy from and the entity ID of the device to copy to and will copy the schedule between them.
 
