@@ -232,7 +232,7 @@ class WiserRoom(ClimateEntity):
     @property
     def name(self):
         """Return Name of device."""
-        return "Wiser " + self._room.name
+        return get_device_name(self._data, self._room_id, "room")
 
     @property
     def preset_mode(self):
