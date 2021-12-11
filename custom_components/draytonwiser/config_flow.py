@@ -16,6 +16,7 @@ from wiserHeatAPIv2.wiserhub import (
 )
 
 from homeassistant import config_entries, exceptions, data_entry_flow
+from homeassistant.components import zeroconf
 from homeassistant.const import CONF_HOST, CONF_NAME, CONF_PORT, CONF_PASSWORD, CONF_SCAN_INTERVAL
 from homeassistant.core import callback
 from homeassistant.data_entry_flow import FlowResult
@@ -130,20 +131,19 @@ class WiserFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
         )
     
 
-    async def async_step_zeroconf(self, discovery_info: dict[str, Any]) -> FlowResult:
+    async def async_step_zeroconf(self, discovery_info: zeroconf.ZeroconfServiceInfo) -> FlowResult:
         """Handle zeroconf discovery."""
-        if not discovery_info[CONF_NAME].startswith("WiserHeat"):
+        if not discovery_info.name.startswith("WiserHeat"):
             return self.async_abort(reason="not_wiser_hub")
 
-        host = discovery_info[CONF_HOST]
-        zctype = discovery_info["type"]
-        name = discovery_info[CONF_NAME].replace(f".{zctype}", "")
+        host = discovery_info.host
+        zctype = discovery_info.type
+        name = discovery_info.name.replace(f".{zctype}", "")
 
         await self.async_set_unique_id(get_unique_id(name))
         self._abort_if_unique_id_configured()
 
         self.context.update({"title_placeholders": {"name": name}})
-        _LOGGER.info(f"Discovered Wiserhub - {name}")
 
         self.discovery_info.update(
             {
@@ -151,7 +151,6 @@ class WiserFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
                 CONF_NAME: name,
             }
         )
-        _LOGGER.info(self.discovery_info)
         return await self.async_step_zeroconf_confirm()
     
 
