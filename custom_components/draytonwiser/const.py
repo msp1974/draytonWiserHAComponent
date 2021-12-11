@@ -70,6 +70,5 @@ WISER_BOOST_PRESETS = {
     "Boost 30m": 30,
     "Boost 1h": 60,
     "Boost 2h": 120,
-    "Boost 3h": 180,
-    "Cancel Boost": 0
+    "Boost 3h": 180
 }
