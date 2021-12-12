@@ -10,7 +10,7 @@ For more information checkout the AMAZING community thread available on https://
 
 ## Minimum Requirements
 
-Requires a minimum of HA 2021.12 (currently the dev branch).  This is needed to support the new button functionality.
+Requires a minimum of HA 2021.12.  This is needed to support the new button functionality and changes to config flow.
 Requires the new WiserHeatAPIv2 api.
 
 ## Updating to v3.0 - IMPORTANT PLEASE READ!
