@@ -21,7 +21,7 @@ If you have custom scripts or automations for this integration, they are likely 
 
 We have tried hard to find a way to not have this as such a disruptive change but are unable to do so.  As such, please understand you may have quite a bit of work to reset your setup after upgrading to this.
 
-In some cases, it will be easier to remove the old integration and add this from new, particularly if you do not have lots of custom scripts/automations.
+In most cases, it will be easier to remove the old integration and add this from new.
 
 However, we hope that many of the things our community has had to create with scripts or automations will now have a much simpler way to do it anyway and we can better maintain this setup going forward so future upgrades will be straight forward.
 
@@ -38,10 +38,12 @@ Below is a list of the new features in this upgrade (these are in addition to th
 
 
 - Hub discovery via zeroconf. Once you add the integration via HACs and restart, HA will discover the hub and display it in the integrations page.
+
 - Support for multiple Wiser Hubs.  If you are lucky enough to have more than one house, you can add your multiple hubs to one HA instance.
+
 - Hub/System
     - Button to boost all rooms
-    - Button to cancel all overrides
+    - Button to cancel all heating overrides
     - Daylight saving setting can now be controlled
     - Support for Wiser Moments - see Moments below
     - Long term stats sensors to heating and hotwater demand - see LTS sensors below
@@ -49,7 +51,9 @@ Below is a list of the new features in this upgrade (these are in addition to th
 - Hot Water
     - Button to boost hot water
     - Button to cancel hot water boost
+    - Button to override current schedule setting
     - Hot water mode selector to allow setting via UI instead of just service
+    - Hot water operation mode sensor to show boost, override, away mode or normal operating
 
 - Rooms
     - New switches to control open window detection in each room
@@ -59,18 +63,23 @@ Below is a list of the new features in this upgrade (these are in addition to th
     - Shows if EcoIQ or Comfort mode is driving room demand on climate entity
     - Arributes now show next temp setting and time from schedule
     - Attributes for is_boosted, is_override and is_heating to help with automations
-- Device Functions
+
+- Devices
     - Turn on/off device lock
     - Enable identify function to flash leds on TRV
     - Drop down selector to set smartplug mode
     - Device attributes now shows which smartplug is the zwave repeater
+    - Signal entity renamed to be more explanatory
+
 - Services
     - Majority of services now utilise new HA functionality to make using them in scripts and automations much easier through the UI.
     - New service to remove devices from HA if you have removed Rooms or Devices from Wiser
     - New service to boost hotwater for custom time period
     - All new buttons, switches and selectors can be used with the relevant services for these entity types.
+
 - Moments
-    - Wiser have created a new feature called moments which are basically scenes.  Any moments you setup on the app will not have a button within HA to activate too (you will need to restart HA to add new ones).  We don't enable this by default so you will need to enable moments in the integration config first.
+    - Wiser have created a new feature called moments which are basically scenes.  Any moments you setup on the app will have a button within HA to activate too (you will need to restart HA to add new ones).  We don't enable this by default so you will need to enable moments in the integration config first.
+
 - Long Term Stats
     - As listed in the categories above, we have added a number of LTS sensors for those in our community wanting to do more analysis of how their heating is performaing.  As HA only support these currently via sensors, this functionality can create a lot of entities.  Therefore, we have made it an optional feature that can be turned on and off in the integration config.
 
