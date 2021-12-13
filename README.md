@@ -37,7 +37,7 @@ As such, this v3.0 release is pretty much a full rewrite of both the api and the
 Below is a list of the new features in this upgrade (these are in addition to the already existing great functionality!):
 
 
-- Hub discovery via zeroconf. Once you add the integration via HACs and restart, HA will discover the hub and display it in the integrations page.
+- Hub discovery via zeroconf. Once you add the integration via HACs and restart, HA will discover the hub and display it in the integrations page. This also uses the dns name to talk to the hub so if it changes IP you will not need to reinstall.
 
 - Support for multiple Wiser Hubs.  If you are lucky enough to have more than one house, you can add your multiple hubs to one HA instance.
 
