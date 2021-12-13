@@ -253,11 +253,6 @@ class WiserRoom(ClimateEntity):
                 "Setting Preset Mode %s for %s", preset_mode, self._room.name,
             )
         if preset_mode == "Advance Schedule":
-            if self._room.is_boosted:
-                await self.hass.async_add_executor_job(
-                    self._room.cancel_boost
-                )
-            
             await self.hass.async_add_executor_job(
                 self._room.schedule_advance
             )
