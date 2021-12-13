@@ -113,12 +113,6 @@ async def async_setup_entry(hass, config_entry, async_add_entities):
         )
 
         platform.async_register_entity_service(
-            WISER_SERVICES["SERVICE_ADVANCE_SCHEDULE"],
-            {},
-            "async_advance_schedule"
-        )
-
-        platform.async_register_entity_service(
             WISER_SERVICES["SERVICE_GET_SCHEDULE"],
             {
                 vol.Optional(ATTR_FILENAME, default=""): vol.Coerce(str),
