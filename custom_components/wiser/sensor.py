@@ -353,6 +353,7 @@ class WiserSystemCircuitState(WiserSensor):
             attrs["next schedule change"] = str(hw.schedule.next.time)
             attrs["next_schedule_state"] = hw.schedule.next.setting
             attrs["is_boosted"] = hw.is_boosted
+            attrs["is_override"] = hw.is_override
         return attrs
 
 
