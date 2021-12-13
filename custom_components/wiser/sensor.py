@@ -53,7 +53,7 @@ async def async_setup_entry(hass, config_entry, async_add_entities):
 
     # Add operation sensor
     wiser_sensors.append(
-        WiserSystemOperationModeSensor(data, sensor_type = "Operation Mode")
+        WiserSystemOperationModeSensor(data, sensor_type = "Heating Operation Mode")
     )
 
     # Add heating circuit sensor
@@ -66,7 +66,11 @@ async def async_setup_entry(hass, config_entry, async_add_entities):
     
     # Add hot water sensors if supported on hub
     if data.wiserhub.hotwater:
-        wiser_sensors.append(WiserSystemCircuitState(data, sensor_type = "Hot Water"))
+        wiser_sensors.extend([
+            WiserSystemCircuitState(data, sensor_type = "Hot Water"),
+            WiserSystemHotWaterPreset(data, sensor_type= "Hot Water Operation Mode")
+
+        ])
 
 
     # Add LTS sensors - for room temp and target temp
@@ -304,6 +308,31 @@ class WiserDeviceSignalSensor(WiserSensor):
         return attrs
 
 
+class WiserSystemHotWaterPreset(WiserSensor):
+    """Hotwater preset sensor"""
+    def __init__(self, data, device_id=0, sensor_type=""):
+        """Initialise the CircuitState Sensor."""
+        super().__init__(data, device_id, sensor_type)
+
+    async def async_update(self):
+        """Fetch new state data for the sensor."""
+        await super().async_update()
+        self._device = self._data.wiserhub.hotwater
+        if self._device.is_boosted:
+            self._state = f"Boost {int(self._device.boost_time_remaining/60)}m"
+        elif self._device.is_override:
+            self._state = f"Override"
+        elif self._device.is_away_mode:
+            self._state = f"Away Mode"
+        else:
+            self._state = "Normal"
+
+    @property
+    def icon(self):
+        """Return icon."""
+        return "mdi:water"
+
+
 class WiserSystemCircuitState(WiserSensor):
     """Definition of a Hotwater/Heating circuit state sensor."""
 
@@ -319,12 +348,7 @@ class WiserSystemCircuitState(WiserSensor):
             self._state = self._device.heating_relay_status
         else:
             self._device = self._data.wiserhub.hotwater
-            if self._device.is_boosted:
-                self._state = f"{self._device.current_state} - Boost {int(self._device.boost_time_remaining/60)}m"
-            elif self._device.is_override:
-                self._state = f"{self._device.current_state} - Override"
-            else:
-                self._state = self._device.current_state
+            self._state = self._device.current_state
 
     @property
     def icon(self):
@@ -357,6 +381,7 @@ class WiserSystemCircuitState(WiserSensor):
             attrs["away_mode_supressed"] = hw.away_mode_suppressed
             attrs["next schedule change"] = str(hw.schedule.next.time)
             attrs["next_schedule_state"] = hw.schedule.next.setting
+            attrs["is_away_mode"] = hw.is_away_mode
             attrs["is_boosted"] = hw.is_boosted
             attrs["is_override"] = hw.is_override
         return attrs
@@ -401,7 +426,7 @@ class WiserSystemOperationModeSensor(WiserSensor):
     @property
     def mode(self):
         """Return mode."""
-        return "Away" if self._data.wiserhub.system.is_away_mode_enabled else "Normal"
+        return "Away Mode" if self._data.wiserhub.system.is_away_mode_enabled else "Normal"
 
     @property
     def icon(self):
