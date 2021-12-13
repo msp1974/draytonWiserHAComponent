@@ -4,9 +4,11 @@ from .const import (
     DOMAIN,
     MANUFACTURER
 )
+from .climate import HVAC_MODE_HASS_TO_WISER
 from .helpers import get_device_name, get_unique_id, get_identifier
 
 from homeassistant.components.button import ButtonEntity
+from homeassistant.components.climate.const import HVAC_MODE_AUTO
 from homeassistant.helpers.dispatcher import async_dispatcher_connect
 from homeassistant.util import dt as dt_util
 
@@ -151,18 +153,19 @@ class WiserCancelHotWaterOverridesButton(WiserButton):
 
 class WiserOverrideHotWaterButton(WiserButton):
     def __init__(self, data):
-        super().__init__(data, "Override Hot Water")
+        super().__init__(data, "Override Schedule Hot Water")
 
     async def async_press(self):
-        if self._data.wiserhub.hotwater.schedule.current_setting == "On":
-            await self.hass.async_add_executor_job(
-                self._data.wiserhub.hotwater.override_state, "Off"
-            )
-        else:
-            await self.hass.async_add_executor_job(
-                self._data.wiserhub.hotwater.override_state, "On"
-            )
-        await self.async_force_update()
+        if self._data.wiserhub.hotwater.mode == HVAC_MODE_HASS_TO_WISER[HVAC_MODE_AUTO]:
+            if self._data.wiserhub.hotwater.schedule.current_setting == "On":
+                await self.hass.async_add_executor_job(
+                    self._data.wiserhub.hotwater.override_state, "Off"
+                )
+            else:
+                await self.hass.async_add_executor_job(
+                    self._data.wiserhub.hotwater.override_state, "On"
+                )
+            await self.async_force_update()
 
     @property
     def icon(self):
