@@ -179,10 +179,8 @@ async def async_setup_entry(hass, config_entry):
                 hass.config_entries.async_forward_entry_setup(config_entry, platform)
             )
 
-
     @callback
     def remove_orphaned_entries_service(service):
-        # Need to add check that this is a hub device
         for entry_id in hass.data[DOMAIN]:
             hass.async_create_task(
                 data.async_remove_orphaned_entries(entry_id, service.data[CONF_HUB_ID])
@@ -318,7 +316,6 @@ class WiserHubHandle:
             model=self.wiserhub.system.model,
             sw_version=self.wiserhub.system.firmware_version,
         )
-       
 
     @callback
     async def async_remove_orphaned_entries(self, entry_id, wiser_hub_id: str):
