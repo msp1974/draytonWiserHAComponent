@@ -319,7 +319,12 @@ class WiserSystemCircuitState(WiserSensor):
             self._state = self._device.heating_relay_status
         else:
             self._device = self._data.wiserhub.hotwater
-            self._state = "Boosted" if self._device.is_boosted else self._device.current_state
+            if self._device.is_boosted:
+                self._state = f"{self._device.current_state} - Boost {int(self._device.boost_time_remaining/60)}m"
+            elif self._device.is_override:
+                self._state = f"{self._device.current_state} - Override"
+            else:
+                self._state = self._device.current_state
 
     @property
     def icon(self):
@@ -452,7 +457,7 @@ class WiserLTSTempSensor(WiserSensor):
         return "mdi:home-thermometer-outline"
 
     @property
-    def native_unit_of_measurement(self):
+    def unit_of_measurement(self):
         return TEMP_CELSIUS
 
     @property
@@ -509,7 +514,7 @@ class WiserLTSDemandSensor(WiserSensor):
         return "mdi:radiator"
 
     @property
-    def native_unit_of_measurement(self):
+    def unit_of_measurement(self):
         return PERCENTAGE
 
     @property
