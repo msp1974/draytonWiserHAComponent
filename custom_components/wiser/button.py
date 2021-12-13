@@ -26,7 +26,8 @@ async def async_setup_entry(hass, config_entry, async_add_entities):
     if data.wiserhub.hotwater:
         wiser_buttons.extend([
             WiserBoostHotWaterButton(data),
-            WiserCancelBoostHotWaterButton(data)
+            WiserCancelHotWaterOverridesButton(data),
+            WiserOverrideHotWaterButton(data)
         ])
 
     if data.enable_moments and data.wiserhub.moments:
@@ -100,7 +101,7 @@ class WiserBoostAllHeatingButton(WiserButton):
 
     @property
     def icon(self):
-        return "mdi:timer"
+        return "mdi:fire"
 
 
 class WiserCancelHeatingOverridesButton(WiserButton):
@@ -115,7 +116,7 @@ class WiserCancelHeatingOverridesButton(WiserButton):
 
     @property
     def icon(self):
-        return "mdi:timer-off"
+        return "mdi:fire-off"
 
 
 class WiserBoostHotWaterButton(WiserButton):
@@ -131,12 +132,12 @@ class WiserBoostHotWaterButton(WiserButton):
 
     @property
     def icon(self):
-        return "mdi:timer"
+        return "mdi:water-plus"
 
 
-class WiserCancelBoostHotWaterButton(WiserButton):
+class WiserCancelHotWaterOverridesButton(WiserButton):
     def __init__(self, data):
-        super().__init__(data, "Cancel Boost Hot Water")
+        super().__init__(data, "Cancel Hot Water Overrides")
 
     async def async_press(self):
         await self.hass.async_add_executor_job(
@@ -146,7 +147,26 @@ class WiserCancelBoostHotWaterButton(WiserButton):
 
     @property
     def icon(self):
-        return "mdi:timer-off"
+        return "mdi:water-off"
+
+class WiserOverrideHotWaterButton(WiserButton):
+    def __init__(self, data):
+        super().__init__(data, "Override Hot Water")
+
+    async def async_press(self):
+        if self._data.wiserhub.hotwater.schedule.current_setting == "On":
+            await self.hass.async_add_executor_job(
+                self._data.wiserhub.hotwater.override_state, "Off"
+            )
+        else:
+            await self.hass.async_add_executor_job(
+                self._data.wiserhub.hotwater.override_state, "On"
+            )
+        await self.async_force_update()
+
+    @property
+    def icon(self):
+        return "mdi:water-boiler"
 
 
 class WiserMomentsButton(WiserButton):
