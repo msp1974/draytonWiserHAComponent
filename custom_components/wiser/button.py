@@ -151,7 +151,7 @@ class WiserCancelHotWaterOverridesButton(WiserButton):
     @property
     def icon(self):
         return "mdi:water-off"
-        
+
 
 class WiserOverrideHotWaterButton(WiserButton):
     def __init__(self, data):
@@ -164,6 +164,8 @@ class WiserOverrideHotWaterButton(WiserButton):
                 "Off" if self._data.wiserhub.hotwater.schedule.current_setting == "On" else "On"
             )
             await self.async_force_update()
+        else:
+            _LOGGER.warning("You can only override the hot water schedule in Auto mode.")
 
     @property
     def icon(self):
@@ -177,9 +179,12 @@ class WiserAdvanceScheduleHotWaterButton(WiserButton):
     async def async_press(self):
         if self._data.wiserhub.hotwater.mode == HVAC_MODE_HASS_TO_WISER[HVAC_MODE_AUTO]:
             await self.hass.async_add_executor_job(
-                self._data.wiserhub.hotwater.advance_schedule
+                self._data.wiserhub.hotwater.schedule_advance
+
             )
             await self.async_force_update()
+        else:
+            _LOGGER.warning("You can only advance the hot water schedule in Auto mode.")
 
     @property
     def icon(self):
