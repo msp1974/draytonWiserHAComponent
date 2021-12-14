@@ -412,13 +412,16 @@ class WiserSmartPlug(WiserSwitch):
     def extra_state_attributes(self):
         """Return set of device state attributes."""
         attrs = {}
-        attrs["ManualState"] = self._smartplug.manual_state
-        attrs["Name"] = self._smartplug.name
-        attrs["Mode"] = self._smartplug.mode
-        attrs["AwayAction"] = self._smartplug.away_action
-        attrs["OutputState"] = "On" if self._smartplug.is_on else "Off"
-        attrs["ControlSource"] = self._smartplug.control_source
-        attrs["ScheduledState"] = self._smartplug.scheduled_state
+        attrs["manual_state"] = self._smartplug.manual_state
+        attrs["name"] = self._smartplug.name
+        attrs["mode"] = self._smartplug.mode
+        attrs["away_action"] = self._smartplug.away_action
+        attrs["output_state"] = "On" if self._smartplug.is_on else "Off"
+        attrs["control_source"] = self._smartplug.control_source
+        attrs["scheduled_state"] = self._smartplug.scheduled_state
+        if self._smartplug.schedule:
+            attrs["next_schedule_change"] = str(self._smartplug.schedule.next.time)
+            attrs["next_schedule_state"] = self._smartplug.schedule.next.setting
         return attrs
 
     async def async_turn_on(self, **kwargs):
