@@ -237,7 +237,7 @@ class WiserSystemSwitch(WiserSwitch):
         attrs = {}
 
         if self._name == "Away Mode":
-            attrs["AwayModeTemperature"] = self._away_temperature
+            attrs["away_mode_temperature"] = self._away_temperature
 
         return attrs
 

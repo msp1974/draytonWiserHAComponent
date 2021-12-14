@@ -379,7 +379,7 @@ class WiserSystemCircuitState(WiserSensor):
                 attrs["boost_end"] = hw.boost_end_time
             attrs["boost_time_remaining"] = int(hw.boost_time_remaining/60)
             attrs["away_mode_supressed"] = hw.away_mode_suppressed
-            attrs["next schedule change"] = str(hw.schedule.next.time)
+            attrs["next_schedule_change"] = str(hw.schedule.next.time)
             attrs["next_schedule_state"] = hw.schedule.next.setting
             attrs["is_away_mode"] = hw.is_away_mode
             attrs["is_boosted"] = hw.is_boosted
@@ -436,7 +436,7 @@ class WiserSystemOperationModeSensor(WiserSensor):
     @property
     def extra_state_attributes(self):
         """Return the device state attributes."""
-        attrs = {"AwayModeTemperature": self._away_temperature}
+        attrs = {"away_mode_temperature": self._away_temperature}
         return attrs
 
 
