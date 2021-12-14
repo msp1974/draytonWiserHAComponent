@@ -445,8 +445,6 @@ class WiserLTSTempSensor(WiserSensor):
 
     def __init__(self, data, id, sensor_type=""):
         """Initialise the operation mode sensor."""
-        self._attr_state_class = SensorStateClass.MEASUREMENT
-        self._attr_device_class = SensorDeviceClass.TEMPERATURE
         self._lts_sensor_type = sensor_type
         if sensor_type == "current_temp":
             super().__init__(data, id, f"LTS Temperature {data.wiserhub.rooms.get_by_id(id).name}")
@@ -482,6 +480,14 @@ class WiserLTSTempSensor(WiserSensor):
         return "mdi:home-thermometer-outline"
 
     @property
+    def device_class(self):
+        return SensorDeviceClass.TEMPERATURE
+
+    @property
+    def state_class(self):
+        return SensorStateClass.MEASUREMENT
+
+    @property
     def unit_of_measurement(self):
         return TEMP_CELSIUS
 
@@ -495,8 +501,6 @@ class WiserLTSDemandSensor(WiserSensor):
 
     def __init__(self, data, id, sensor_type=""):
         """Initialise the operation mode sensor."""
-        self._attr_state_class = SensorStateClass.MEASUREMENT
-        self._attr_device_class = SensorDeviceClass.POWER_FACTOR
         self._lts_sensor_type = sensor_type
         if self._lts_sensor_type == "heating":
             super().__init__(data, id, f"LTS Heating Demand Channel {id}")
@@ -537,6 +541,14 @@ class WiserLTSDemandSensor(WiserSensor):
         if self._lts_sensor_type == "hotwater":
             return "mdi:water-boiler"
         return "mdi:radiator"
+
+    @property
+    def device_class(self):
+        return SensorDeviceClass.POWER_FACTOR
+
+    @property
+    def state_class(self):
+        return SensorStateClass.MEASUREMENT
 
     @property
     def unit_of_measurement(self):
