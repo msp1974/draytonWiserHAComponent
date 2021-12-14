@@ -10,11 +10,10 @@ import voluptuous as vol
 
 from homeassistant.components.switch import SwitchEntity
 from homeassistant.const import ATTR_ENTITY_ID
-from homeassistant.core import callback
 from homeassistant.helpers import config_validation as cv
 from homeassistant.helpers.dispatcher import async_dispatcher_connect
 
-from .const import DATA, DOMAIN, ENTITY_PREFIX, MANUFACTURER
+from .const import DATA, DOMAIN, MANUFACTURER
 from .helpers import get_device_name, get_identifier, get_room_name, get_unique_id
 
 _LOGGER = logging.getLogger(__name__)

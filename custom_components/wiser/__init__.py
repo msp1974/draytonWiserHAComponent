@@ -62,10 +62,9 @@ from .const import (
     MANUFACTURER,
     UPDATE_LISTENER,
     UPDATE_TRACK,
-    WISER_ADD_PLATFORMS,
     WISER_PLATFORMS,
-    WISER_SERVICES,
 )
+
 from .helpers import get_device_name, get_identifier
 
 _LOGGER = logging.getLogger(__name__)
@@ -137,12 +136,12 @@ async def async_setup_entry(hass, config_entry):
     ):
         _LOGGER.error("Failed to login to wiser hub")
         return False
-    except RuntimeError as exc:
-        _LOGGER.error("Failed to setup wiser hub: %s", exc)
+    except RuntimeError as exr:
+        _LOGGER.error(f"Failed to setup wiser hub: {exr}")
         return ConfigEntryNotReady
-    except requests.exceptions.HTTPError as ex:
-        if ex.response.status_code > 400 and ex.response.status_code < 500:
-            _LOGGER.error("Failed to login to wiser hub: %s", ex)
+    except requests.exceptions.HTTPError as exh:
+        if exh.response.status_code > 400 and exh.response.status_code < 500:
+            _LOGGER.error(f"Failed to login to wiser hub: {exh}")
             return False
         raise ConfigEntryNotReady
 
@@ -160,25 +159,20 @@ async def async_setup_entry(hass, config_entry):
 
     update_listener = config_entry.add_update_listener(_async_update_listener)
 
-
     hass.data[DOMAIN][config_entry.entry_id] = {
         DATA: data,
         UPDATE_TRACK: update_track,
         UPDATE_LISTENER: update_listener,
     }
-    
+
+
+    # Setup platforms
     for platform in WISER_PLATFORMS:
         hass.async_create_task(
             hass.config_entries.async_forward_entry_setup(config_entry, platform)
         )
 
-    # Add new button functionality if HA > 2021.12
-    if MAJOR_VERSION > 2021 or (MAJOR_VERSION == 2021 and MINOR_VERSION >= 12):
-        for platform in WISER_ADD_PLATFORMS:
-            hass.async_create_task(
-                hass.config_entries.async_forward_entry_setup(config_entry, platform)
-            )
-
+    # Initialise global services
     @callback
     def remove_orphaned_entries_service(service):
         for entry_id in hass.data[DOMAIN]:
@@ -193,8 +187,10 @@ async def async_setup_entry(hass, config_entry):
         schema=SELECT_HUB_SCHEMA,
     )
 
-    _LOGGER.info("Wiser Component Setup Completed")
+    # Add hub as device
     await data.async_update_device_registry()
+
+    _LOGGER.info("Wiser Component Setup Completed")
 
     return True
 
@@ -276,26 +272,25 @@ class WiserHubHandle:
         try:
             result = await self._hass.async_add_executor_job(self.wiserhub.read_hub_data)
             if result is not None:
-                _LOGGER.info("**Wiser Hub data updated - {} **".format(self.wiserhub.system.name))
+                _LOGGER.debug(f"Wiser Hub data updated - {self.wiserhub.system.name}")
                 # Send update notice to all components to update
-                dispatcher_send(self._hass, "{}-HubUpdateMessage".format(self.wiserhub.system.name))
+                dispatcher_send(self._hass, f"{self.wiserhub.system.name}-HubUpdateMessage")
                 return True
 
-            _LOGGER.error("Unable to update from Wiser hub - {}".format(self.wiserhub.system.name))
+            _LOGGER.error(f"Unable to update from Wiser hub - {self.wiserhub.system.name}")
             return False
         except json.decoder.JSONDecodeError as ex:
             _LOGGER.error(
-                "Data not in JSON format when getting data from the Wiser hub. Error is %s",
-                str(ex),
+                f"Data not in JSON format when getting data from the Wiser hub. Error is {str(ex)}"
             )
             return False
         except WiserHubConnectionError as ex:
-            _LOGGER.error("Unable to update from Wiser hub {} due to timeout error".format(self.wiserhub.system.name))
-            _LOGGER.debug("Error is %s", str(ex))
+            _LOGGER.error(f"Unable to update from Wiser hub {self.wiserhub.system.name} due to timeout error")
+            _LOGGER.debug(f"Error is {str(ex)}")
             return False
         except Exception as ex:  # pylint: disable=broad-except
-            _LOGGER.error("Unable to update from Wiser hub {} due to unknown error".format(self.wiserhub.system.name))
-            _LOGGER.error("Error is %s", str(ex))
+            _LOGGER.error(f"Unable to update from Wiser hub {self.wiserhub.system.name} due to unknown error")
+            _LOGGER.debug(f"Error is {str(ex)}")
             return False
 
 

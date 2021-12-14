@@ -8,8 +8,7 @@ Angelosantagata@gmail.com
 DOMAIN = "wiser"
 DATA_WISER_CONFIG = "wiser_config"
 VERSION = "3.1.0"
-WISER_PLATFORMS = ["climate", "sensor", "switch", "select"]
-WISER_ADD_PLATFORMS = ["button"]
+WISER_PLATFORMS = ["climate", "sensor", "switch", "select", "button"]
 DATA = "data"
 UPDATE_TRACK = "update_track"
 UPDATE_LISTENER = "update_listener"
@@ -40,12 +39,7 @@ CONF_LTS_SENSORS = "lts_sensors"
 # Custom Attributes
 ATTR_TIME_PERIOD = "time_period"
 
-"""
-WEEKDAYS = ["monday", "tuesday", "wednesday", "thursday", "friday"]
-WEEKENDS = ["saturday", "sunday"]
-SPECIALDAYS = ["weekdays", "weekends"]
-"""
-
+# Signal icons
 SIGNAL_STRENGTH_ICONS = {
     "Online": "mdi:wifi-strength-4",
     "NoSignal": "mdi:wifi-strength-alert-outline",

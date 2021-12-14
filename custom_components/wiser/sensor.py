@@ -38,6 +38,7 @@ async def async_setup_entry(hass, config_entry, async_add_entities):
     hub_devices = data.wiserhub.devices.all
 
     # Add signal sensors for all devices
+    _LOGGER.debug("Setting up Device sensors")
     if data.wiserhub.devices:
         for device in data.wiserhub.devices.all:
             wiser_sensors.append(
@@ -49,16 +50,18 @@ async def async_setup_entry(hass, config_entry, async_add_entities):
                 )
     
     # Add cloud status sensor
+    _LOGGER.debug("Setting up Cloud sensor")
     wiser_sensors.append(WiserSystemCloudSensor(data, sensor_type = "Cloud"))
 
     # Add operation sensor
+    _LOGGER.debug("Setting up Heating Operation Mode sensor")
     wiser_sensors.append(
         WiserSystemOperationModeSensor(data, sensor_type = "Heating Operation Mode")
     )
 
     # Add heating circuit sensor
     if data.wiserhub.heating_channels:
-        _LOGGER.info(f"{data.wiserhub.system.name} - Heating LTS")
+        _LOGGER.debug("Setting up Heating Circuit sensors")
         for heating_channel in data.wiserhub.heating_channels.all:
                 wiser_sensors.append(
                     WiserSystemCircuitState(data, heating_channel.id, sensor_type = "Heating")
@@ -66,6 +69,7 @@ async def async_setup_entry(hass, config_entry, async_add_entities):
     
     # Add hot water sensors if supported on hub
     if data.wiserhub.hotwater:
+        _LOGGER.debug("Setting up Hot Water sensors")
         wiser_sensors.extend([
             WiserSystemCircuitState(data, sensor_type = "Hot Water"),
             WiserSystemHotWaterPreset(data, sensor_type= "Hot Water Operation Mode")
@@ -75,6 +79,7 @@ async def async_setup_entry(hass, config_entry, async_add_entities):
 
     # Add LTS sensors - for room temp and target temp
     if data.enable_lts_sensors:
+        _LOGGER.debug("Setting up LTS sensors")
         for temp_device in data.wiserhub.rooms.all:
             wiser_sensors.extend([
                 WiserLTSTempSensor(data, temp_device.id, sensor_type = "current_temp"),
@@ -109,11 +114,11 @@ class WiserSensor(Entity):
         self._device_name = None
         self._sensor_type = sensor_type
         self._state = None
-        _LOGGER.debug(f"{self._data.wiserhub.system.name} {self.name} init")
+        _LOGGER.debug(f"{self._data.wiserhub.system.name} {self.name} initalise")
 
     async def async_update(self):
         """Async Update."""
-        _LOGGER.debug("%s device update requested", self._device_name)
+        _LOGGER.debug(f"{self._device_name} device update requested")
 
     @property
     def name(self):
@@ -157,7 +162,7 @@ class WiserSensor(Entity):
 
         self.async_on_remove(
             async_dispatcher_connect(
-                self.hass, "{}-HubUpdateMessage".format(self._data.wiserhub.system.name), async_update_state
+                self.hass, f"{self._data.wiserhub.system.name}-HubUpdateMessage", async_update_state
             )
         )
 
@@ -222,7 +227,6 @@ class WiserDeviceSignalSensor(WiserSensor):
     def __init__(self, data, device_id=0, sensor_type=""):
         """Initialise the device sensor."""
         super().__init__(data, device_id, sensor_type)
-        #self._device = self._data.wiserhub.devices.get_by_id(self._device_id)
 
     async def async_update(self):
         """Fetch new state data for the sensor."""
@@ -261,7 +265,6 @@ class WiserDeviceSignalSensor(WiserSensor):
     @property
     def extra_state_attributes(self):
         """Return device state attributes."""
-        _LOGGER.debug("State attributes for %s %s", self._device_id, self._sensor_type)
         attrs = {}
         device_data = self._data.wiserhub.devices.get_by_id(self._device_id)
 

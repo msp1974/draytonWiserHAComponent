@@ -36,8 +36,8 @@ from .const import (
     DOMAIN,
     MANUFACTURER,
     ROOM,
-    WISER_SERVICES,
-    WISER_BOOST_PRESETS
+    WISER_BOOST_PRESETS,
+    WISER_SERVICES
 )
 from .helpers import get_device_name, get_room_name, get_unique_id, get_identifier
 
@@ -94,6 +94,7 @@ async def async_setup_entry(hass, config_entry, async_add_entities):
     data = hass.data[DOMAIN][config_entry.entry_id][DATA]  # Get Handler
 
     if data.wiserhub.rooms:
+        _LOGGER.debug("Setting up Room climate entities")
         wiser_rooms = [
             WiserRoom(data, room.id) for room in data.wiserhub.rooms.all if len(room.devices) > 0
         ]
@@ -205,7 +206,7 @@ class WiserRoom(ClimateEntity):
     def set_hvac_mode(self, hvac_mode):
         """Set new operation mode."""
         _LOGGER.debug(
-            "Setting HVAC mode to %s for %s", hvac_mode, self._room.name
+            f"Setting HVAC mode to {hvac_mode} for {self._room.name}"
         )
         self._room.mode = HVAC_MODE_HASS_TO_WISER[hvac_mode]
         self.hass.async_create_task(
@@ -250,7 +251,7 @@ class WiserRoom(ClimateEntity):
     async def async_set_preset_mode(self, preset_mode):
         """Async call to set preset mode ."""
         _LOGGER.debug(
-                "Setting Preset Mode %s for %s", preset_mode, self._room.name,
+                f"Setting Preset Mode {preset_mode} for {self._room.name}"
             )
         if preset_mode == "Advance Schedule":
             await self.hass.async_add_executor_job(
@@ -324,12 +325,12 @@ class WiserRoom(ClimateEntity):
             return False
 
         if self._data.setpoint_mode == "boost":
-            _LOGGER.info("Setting temperature for %s to %s using boost method.", self.name, target_temperature)
+            _LOGGER.info(f"Setting temperature for {self.name} to {target_temperature} using boost")
             await self.hass.async_add_executor_job(
                 self._room.set_target_temperature_for_duration, target_temperature, self._data.boost_time
             )
         else:
-            _LOGGER.info("Setting temperature for %s to %s", self.name, target_temperature)
+            _LOGGER.info(f"Setting temperature for {self.name} to {target_temperature}")
             await self.hass.async_add_executor_job(
                 self._room.set_target_temperature, target_temperature
             )
@@ -365,31 +366,36 @@ class WiserRoom(ClimateEntity):
     @callback
     async def async_get_schedule(self, filename: str) -> None:
         try:
-            _LOGGER.info("Saving {} schedule to file {}".format(self._room.name, filename))
+            _LOGGER.info(f"Saving {self._room.name} schedule to file {filename}")
             await self.hass.async_add_executor_job(
                 self._room.schedule.save_schedule_to_yaml_file, filename
             )
         except:
-            _LOGGER.error("Error writing schedule to file {}".format(filename))
+            _LOGGER.error(f"Saving {self._room.name} schedule to file {filename}")
 
     @callback
     async def async_set_schedule(self, filename: str) -> None:
         try:
-            _LOGGER.info("Setting {} schedule from file {}".format(self._room.name, filename))
+            _LOGGER.info(f"Setting {self._room.name} schedule from file {filename}")
             await self.hass.async_add_executor_job(
                 self._room.schedule.set_schedule_from_yaml_file, filename
             )
             await self.async_force_update()
         except:
-            _LOGGER.error("Error setting schedule from file {}".format(filename))
+            _LOGGER.error(f"Error setting {self._room.name} schedule from file {filename}")
 
     @callback
     async def async_copy_schedule(self, to_entity_id)-> None:
         to_room_name = to_entity_id.replace("climate.wiser_","").replace("_"," ")
-        await self.hass.async_add_executor_job(
-                self._room.schedule.copy_schedule, self._data.wiserhub.rooms.get_by_name(to_room_name).schedule.id
-            )
-        await self.async_force_update()
+        try:
+            _LOGGER.info(f"Copying schedule from {self._room.name} to {to_room_name}")
+            await self.hass.async_add_executor_job(
+                    self._room.schedule.copy_schedule, self._data.wiserhub.rooms.get_by_name(to_room_name).schedule.id
+                )
+            await self.async_force_update()
+        except:
+            _LOGGER.error(f"Error copying schedule from {self._room.name} to {to_room_name}")
+
 
     async def async_added_to_hass(self):
         """Subscribe for update from the hub."""

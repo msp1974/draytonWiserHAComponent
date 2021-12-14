@@ -20,12 +20,15 @@ async def async_setup_entry(hass, config_entry, async_add_entities):
     """Set up Wiser climate device."""
     data = hass.data[DOMAIN][config_entry.entry_id][DATA]  # Get Handler
 
+
+    _LOGGER.debug("Setting up Heating buttons")
     wiser_buttons = [
         WiserBoostAllHeatingButton(data),
         WiserCancelHeatingOverridesButton(data)
     ]
 
     if data.wiserhub.hotwater:
+        _LOGGER.debug("Setting up Hot Water buttons")
         wiser_buttons.extend([
             WiserBoostHotWaterButton(data),
             WiserCancelHotWaterOverridesButton(data),
@@ -34,6 +37,7 @@ async def async_setup_entry(hass, config_entry, async_add_entities):
         ])
 
     if data.enable_moments and data.wiserhub.moments:
+        _LOGGER.debug("Setting up Moments buttons")
         for moment in data.wiserhub.moments.all:
             wiser_buttons.append(WiserMomentsButton(data, moment.id))
 

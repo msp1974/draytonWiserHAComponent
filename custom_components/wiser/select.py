@@ -1,11 +1,11 @@
 import logging
 from .const import (
-    DATA,
-    DOMAIN,
-    WISER_SERVICES,
     ATTR_TIME_PERIOD,
+    DATA,
     DEFAULT_BOOST_TEMP_TIME,
-    MANUFACTURER
+    DOMAIN,
+    MANUFACTURER,
+    WISER_SERVICES
 )
 from .helpers import get_device_name, get_unique_id, get_identifier
 
@@ -22,11 +22,13 @@ async def async_setup_entry(hass, config_entry, async_add_entities):
     data = hass.data[DOMAIN][config_entry.entry_id][DATA]  # Get Handler
 
     if data.wiserhub.hotwater:
+        _LOGGER.debug("Setting up Hot Water mode select")
         wiser_hot_water = [WiserHotWaterModeSelect(data)]
         async_add_entities(wiser_hot_water, True)
 
     # Add SmartPlugs (if any)
     if data.wiserhub.devices.smartplugs.count > 0:
+        _LOGGER.debug("Setting up Smartplug mode select")
         wiser_smart_plugs = [
             WiserSmartPlugModeSelect(data, plug.id)
             for plug in data.wiserhub.devices.smartplugs.all
@@ -58,7 +60,7 @@ class WiserSelectEntity(SelectEntity):
     def __init__(self, data):
         """Initialize the sensor."""
         self._data = data
-        _LOGGER.info(f"{self._data.wiserhub.system.name} {self.name} init")
+        _LOGGER.info(f"{self._data.wiserhub.system.name} {self.name} initalise")
 
     async def async_force_update(self):
         await self._data.async_update(no_throttle=True)
@@ -86,7 +88,7 @@ class WiserSelectEntity(SelectEntity):
 
         self.async_on_remove(
             async_dispatcher_connect(
-                self.hass, "{}-HubUpdateMessage".format(self._data.wiserhub.system.name), async_update_state
+                self.hass, f"{self._data.wiserhub.system.name}-HubUpdateMessage", async_update_state
             )
         )
 
@@ -113,7 +115,7 @@ class WiserHotWaterModeSelect(WiserSelectEntity):
         return self._hotwater.mode
 
     def select_option(self, option: str) -> None:
-        _LOGGER.debug("Setting hot water mode to {}".format(option))
+        _LOGGER.debug("Setting hot water mode to {option}")
         self._hotwater.mode = option
         self._hotwater.cancel_overrides()
         self.hass.async_create_task(self.async_force_update())
@@ -172,7 +174,7 @@ class WiserSmartPlugModeSelect(WiserSelectEntity):
         return self._smartplug.mode
 
     def select_option(self, option: str) -> None:
-        _LOGGER.debug("Setting smartplug mode to {}".format(option))
+        _LOGGER.debug("Setting smartplug mode to {option}")
         self._smartplug.mode = option
         self.hass.async_create_task(self.async_force_update())
     
