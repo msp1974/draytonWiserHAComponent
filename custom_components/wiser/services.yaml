@@ -4,9 +4,11 @@ boost_heating:
     Boost the temperature in the selected rooms/areas.
   target:
     entity:
+      integration: wiser
       domain: climate
   fields:
     time_period:
+      name: Time period
       description: Set the time period for the boost in minutes.
       example: 60
       default: 60
@@ -18,6 +20,7 @@ boost_heating:
           step: 1
           mode: box
     temperature:
+      name: Temperature
       description: Set the increase in temperature for the boost period.
       example: 3.0
       default: 3.0
@@ -39,6 +42,7 @@ boost_hotwater:
       domain: select
   fields:
     time_period:
+      name: Time period
       description: Set the time period for the boost in minutes.
       example: 60
       default: 60
@@ -46,7 +50,7 @@ boost_hotwater:
       selector:
         number:
           min: 1
-          max: 9999
+          max: 1440
           step: 1
           mode: box
 
@@ -56,6 +60,7 @@ advance_schedule:
     Overrides the room temperature to the next scheduled temperature. 
   target:
     entity:
+      integration: wiser
       domain: climate
 
 get_schedule:
@@ -109,19 +114,6 @@ copy_schedule:
       selector:
         entity:
           domain: climate
-
-set_smartplug_mode:
-  name: Set Smart Plug Mode
-  description: Sets the mode of a smart plug
-  fields:
-    entity_id:
-      description: Enter the entity_id for the smartplug.
-      required: true
-      example: switch.smartplug
-    plug_mode:
-      description: Enter the switch mode. Can be auto or manual.
-      required: true
-      example: manual
 
 set_hotwater_mode:
   name: "Set Hot Water Mode"
