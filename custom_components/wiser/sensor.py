@@ -321,14 +321,16 @@ class WiserSystemHotWaterPreset(WiserSensor):
         """Fetch new state data for the sensor."""
         await super().async_update()
         self._device = self._data.wiserhub.hotwater
+        mode = "Manual" if self._device.mode != "Auto" else "Auto"
+        state = ""
         if self._device.is_boosted:
-            self._state = f"Boost {int(self._device.boost_time_remaining/60)}m"
+            state = f"Boost {int(self._device.boost_time_remaining/60)}m"
         elif self._device.is_override:
-            self._state = f"Override"
+            state = f"Override"
         elif self._device.is_away_mode:
-            self._state = f"Away Mode"
-        else:
-            self._state = "Normal"
+            state = f"Away Mode"
+
+        self._state = f"{mode}{' - ' + state if state else ''}"
 
     @property
     def icon(self):

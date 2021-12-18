@@ -182,7 +182,7 @@ class WiserSwitch(SwitchEntity):
 
         self.async_on_remove(
             async_dispatcher_connect(
-                self.hass, "{}-HubUpdateMessage".format(self._data.wiserhub.system.name), async_update_state
+                self.hass, f"{self._data.wiserhub.system.name}-HubUpdateMessage", async_update_state
             )
         )
 
