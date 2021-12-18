@@ -33,7 +33,6 @@ async def async_setup_entry(hass, config_entry, async_add_entities):
             WiserBoostHotWaterButton(data),
             WiserCancelHotWaterOverridesButton(data),
             WiserOverrideHotWaterButton(data),
-            WiserAdvanceScheduleHotWaterButton(data)
         ])
 
     if data.enable_moments and data.wiserhub.moments:
@@ -159,40 +158,18 @@ class WiserCancelHotWaterOverridesButton(WiserButton):
 
 class WiserOverrideHotWaterButton(WiserButton):
     def __init__(self, data):
-        super().__init__(data, "Override Schedule Hot Water")
+        super().__init__(data, "Toggle Hot Water")
 
     async def async_press(self):
-        if self._data.wiserhub.hotwater.mode == HVAC_MODE_HASS_TO_WISER[HVAC_MODE_AUTO]:
-            await self.hass.async_add_executor_job(
-                self._data.wiserhub.hotwater.override_state, 
-                "Off" if self._data.wiserhub.hotwater.schedule.current_setting == "On" else "On"
-            )
-            await self.async_force_update()
-        else:
-            _LOGGER.warning("You can only override the hot water schedule in Auto mode.")
+        await self.hass.async_add_executor_job(
+            self._data.wiserhub.hotwater.override_state, 
+            "Off" if self._data.wiserhub.hotwater.current_state == "On" else "On"
+        )
+        await self.async_force_update()
 
     @property
     def icon(self):
         return "mdi:water-boiler"
-
-
-class WiserAdvanceScheduleHotWaterButton(WiserButton):
-    def __init__(self, data):
-        super().__init__(data, "Advance Schedule Hot Water")
-
-    async def async_press(self):
-        if self._data.wiserhub.hotwater.mode == HVAC_MODE_HASS_TO_WISER[HVAC_MODE_AUTO]:
-            await self.hass.async_add_executor_job(
-                self._data.wiserhub.hotwater.schedule_advance
-
-            )
-            await self.async_force_update()
-        else:
-            _LOGGER.warning("You can only advance the hot water schedule in Auto mode.")
-
-    @property
-    def icon(self):
-        return "mdi:water-plus"
 
 
 class WiserMomentsButton(WiserButton):
