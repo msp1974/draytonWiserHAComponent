@@ -35,6 +35,7 @@ boost_hotwater:
     Boost the hot water for time specified.
   target:
     entity:
+      integration: wiser
       domain: select
   fields:
     time_period:
@@ -63,6 +64,7 @@ get_schedule:
     Read the schedule from a room and write to an output file in yaml
   target:
     entity:
+      integration: wiser
       domain: climate
   fields:
     filename:
@@ -80,6 +82,7 @@ set_schedule:
   description: Read in the yaml schedule file and set the schedule in a room
   target:
     entity:
+      integration: wiser
       domain: climate
   fields:
     filename:
@@ -95,6 +98,7 @@ copy_schedule:
   description: Copy the schedule in a room to another room
   target:
     entity:
+      integration: wiser
       domain: climate
   fields:
     to_entity_id:
@@ -124,6 +128,7 @@ set_hotwater_mode:
   description: Sets the hot water mode
   target:
     entity:
+      integration: wiser
       domain: select
   fields:
     hotwater_mode:
