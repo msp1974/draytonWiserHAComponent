@@ -46,14 +46,14 @@ Below is a list of the new features in this upgrade (these are in addition to th
     - Button to cancel all heating overrides
     - Daylight saving setting can now be controlled
     - Support for Wiser Moments - see Moments below
-    - Long term stats sensors to heating and hotwater demand - see LTS sensors below
+    - Long term stats sensors for heating channel and hotwater demand - see LTS sensors below
 
 - Hot Water
     - Button to boost hot water
-    - Button to cancel hot water boost
-    - Button to override current schedule setting
+    - Button to cancel hot water overrides
+    - Button to toggle on/off.  In auto mode this is an override until next schedule time.
     - Hot water mode selector to allow setting via UI instead of just service
-    - Hot water operation mode sensor to show boost, override, away mode or normal operating
+    - Hot water operation mode sensor to show boost (with remaining time), override, away mode or normal operating
 
 - Rooms
     - New switches to control open window detection in each room
@@ -82,6 +82,12 @@ Below is a list of the new features in this upgrade (these are in addition to th
 
 - Long Term Stats
     - As listed in the categories above, we have added a number of LTS sensors for those in our community wanting to do more analysis of how their heating is performaing.  As HA only support these currently via sensors, this functionality can create a lot of entities.  Therefore, we have made it an optional feature that can be turned on and off in the integration config.
+
+# Breaking Changes
+
+Many entity names and unique ids have changed meaning new entities will be created and the old ones will show as unavailable
+Standardisation of entity attribute names format meaning some attribute names are now different
+
 
 
 ## Issues and Questions
