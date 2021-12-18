@@ -335,7 +335,7 @@ class WiserSystemHotWaterPreset(WiserSensor):
     @property
     def icon(self):
         """Return icon."""
-        return "mdi:water"
+        return "mdi:water-boiler"
 
 
 class WiserSystemCircuitState(WiserSensor):
@@ -365,8 +365,8 @@ class WiserSystemCircuitState(WiserSensor):
 
         # Hot water circuit
         if self._state == "Off":
-            return "mdi:water-off"
-        return "mdi:water"
+            return "mdi:fire-off"
+        return "mdi:fire"
 
     @property
     def extra_state_attributes(self):
@@ -424,7 +424,6 @@ class WiserSystemOperationModeSensor(WiserSensor):
     async def async_update(self):
         """Fetch new state data for the sensor."""
         await super().async_update()
-        #self._override_type = self.data.wiserhub.getSystem().get("OverrideType")
         self._away_temperature = self._data.wiserhub.system.away_mode_target_temperature
         self._state = self.mode
 
