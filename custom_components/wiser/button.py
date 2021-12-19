@@ -48,9 +48,10 @@ class WiserButton(ButtonEntity):
         """Initialize the sensor."""
         self._data = data
         self._name = name
-        _LOGGER.info(f"{self._data.wiserhub.system.name} {self.name} init")
+        _LOGGER.debug(f"{self._data.wiserhub.system.name} {self.name} init")
 
     async def async_force_update(self):
+        _LOGGER.debug(f"{self._name} requested hub update")
         await self._data.async_update(no_throttle=True)
 
     @property
