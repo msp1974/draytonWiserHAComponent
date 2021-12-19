@@ -7,15 +7,21 @@ from .const import (
     MANUFACTURER,
     WISER_SERVICES
 )
+from .climate import (
+    ATTR_COPYTO_ENTITY_ID,
+    ATTR_FILENAME
+)
 from .helpers import get_device_name, get_unique_id, get_identifier
 
 import voluptuous as vol
+from homeassistant.const import ATTR_MODE
 from homeassistant.components.select import SelectEntity
+from homeassistant.components.water_heater import SUPPORT_OPERATION_MODE
+from homeassistant.core import callback
 from homeassistant.helpers import config_validation as cv, entity_platform
 from homeassistant.helpers.dispatcher import async_dispatcher_connect
 
 _LOGGER = logging.getLogger(__name__)
-ATTR_HW_MODE = "hotwater_mode"
 
 async def async_setup_entry(hass, config_entry, async_add_entities):
     """Set up Wiser climate device."""
@@ -42,9 +48,9 @@ async def async_setup_entry(hass, config_entry, async_add_entities):
         platform.async_register_entity_service(
             WISER_SERVICES["SERVICE_SET_HOTWATER_MODE"],
             {
-                vol.Required(ATTR_HW_MODE): vol.In(data.wiserhub.hotwater.available_modes),
+                vol.Required(ATTR_MODE): vol.In(data.wiserhub.hotwater.available_modes),
             },
-            "async_set_hotwater_mode"
+            "async_set_mode"
         )
 
         platform.async_register_entity_service(
@@ -52,7 +58,41 @@ async def async_setup_entry(hass, config_entry, async_add_entities):
             {
                 vol.Optional(ATTR_TIME_PERIOD, default=DEFAULT_BOOST_TEMP_TIME): vol.Coerce(int),
             },
-            "async_boost_hotwater"
+            "async_boost"
+        )
+
+    if data.wiserhub.devices.smartplugs:
+        platform.async_register_entity_service(
+            WISER_SERVICES["SERVICE_SET_SMARTPLUG_MODE"],
+            {
+                vol.Required(ATTR_MODE): vol.In(data.wiserhub.devices.smartplugs.available_modes),
+            },
+            "async_set_mode"
+        )
+
+    if data.wiserhub.hotwater or data.wiserhub.devices.smartplugs:
+        platform.async_register_entity_service(
+            WISER_SERVICES["SERVICE_GET_ONOFF_SCHEDULE"],
+            {
+                vol.Optional(ATTR_FILENAME, default=""): vol.Coerce(str),
+            },
+            "async_get_schedule"
+        )
+
+        platform.async_register_entity_service(
+            WISER_SERVICES["SERVICE_SET_ONOFF_SCHEDULE"],
+            {
+                vol.Optional(ATTR_FILENAME, default=""): vol.Coerce(str),
+            },
+            "async_set_schedule"
+        )
+
+        platform.async_register_entity_service(
+            WISER_SERVICES["SERVICE_COPY_ONOFF_SCHEDULE"],
+            {
+                vol.Required(ATTR_COPYTO_ENTITY_ID): cv.entity_id,
+            },
+            "async_copy_schedule"
         )
 
 
@@ -78,6 +118,26 @@ class WiserSelectEntity(SelectEntity):
     @property
     def options(self) -> list[str]:
         return self._options
+
+    @callback
+    async def async_set_mode(self, mode):
+        _LOGGER.error(f"Set mode service is not available on this entity")
+
+    @callback
+    async def async_boost(self, time_period: int):
+        _LOGGER.error(f"Boost service is not available on this entity")
+
+    @callback
+    async def async_get_schedule(self, filename: str) -> None:
+        _LOGGER.error(f"Get schedule service is not available on this entity")
+
+    @callback
+    async def async_set_schedule(self, filename: str) -> None:
+        _LOGGER.error(f"Set schedule service is not available on this entity")
+
+    @callback
+    async def async_copy_schedule(self, to_entity_id)-> None:
+        _LOGGER.error(f"Copy schedule service is not available on this entity")
 
     async def async_added_to_hass(self):
         """Subscribe for update from the hub."""
@@ -137,17 +197,42 @@ class WiserHotWaterModeSelect(WiserSelectEntity):
                 "via_device": (DOMAIN, self._data.wiserhub.system.name),
             }
 
-    async def async_set_hotwater_mode(self, hotwater_mode):
+    @callback
+    async def async_set_mode(self, mode):
+        _LOGGER.info(f"Setting Hot Water to {mode} mode")
         await self.hass.async_add_executor_job(
-            self.select_option, hotwater_mode
+            self.select_option, mode
         )
         await self.async_force_update()
 
-    async def async_boost_hotwater(self, time_period: int):
+    @callback
+    async def async_boost(self, time_period: int):
+        _LOGGER.info(f"Boosting Hot Water for {time_period}m")
         await self.hass.async_add_executor_job(
             self._data.wiserhub.hotwater.boost, time_period
         )
         await self.async_force_update()
+
+    @callback
+    async def async_get_schedule(self, filename: str) -> None:
+        try:
+            _LOGGER.info(f"Saving hot water schedule to file {filename}")
+            await self.hass.async_add_executor_job(
+                self._data.wiserhub.hotwater.schedule.save_schedule_to_yaml_file, filename
+            )
+        except Exception as ex:
+            _LOGGER.error(f"Error saving hotwater schedule to file {filename}.  Error is {ex}")
+
+    @callback
+    async def async_set_schedule(self, filename: str) -> None:
+        try:
+            _LOGGER.info(f"Setting hotwater schedule from file {filename}")
+            await self.hass.async_add_executor_job(
+                self._data.wiserhub.hotwater.schedule.set_schedule_from_yaml_file, filename
+            )
+            await self.async_force_update()
+        except Exception as ex:
+            _LOGGER.error(f"Error setting hotwater schedule from file {filename}.  Error is {ex}")
 
 
 class WiserSmartPlugModeSelect(WiserSelectEntity):
@@ -162,7 +247,7 @@ class WiserSmartPlugModeSelect(WiserSelectEntity):
 
     async def async_update(self):
         """Async update method."""
-        self._hotwater = self._data.wiserhub.devices.smartplugs.get_by_id(self._smartplug_id)
+        self._smartplug = self._data.wiserhub.devices.smartplugs.get_by_id(self._smartplug_id)
     
     @property
     def name(self):
@@ -194,4 +279,56 @@ class WiserSmartPlugModeSelect(WiserSelectEntity):
                 "sw_version": self._smartplug.firmware_version,
                 "via_device": (DOMAIN, self._data.wiserhub.system.name),
             }
+
+    @callback
+    async def async_set_mode(self, mode):
+        _LOGGER.info(f"Setting {self._smartplug.name} to {mode} mode")
+        await self.hass.async_add_executor_job(
+            self.select_option, mode
+        )
+        await self.async_force_update()
+
+    @callback
+    async def async_get_schedule(self, filename: str) -> None:
+        try:
+            if self._smartplug.schedule:
+                _LOGGER.info(f"Saving {self._smartplug.name} schedule to file {filename}")
+                await self.hass.async_add_executor_job(
+                    self._smartplug.schedule.save_schedule_to_yaml_file, filename
+                )
+            else:
+                _LOGGER.warning(f"{self._smartplug.name} has no schedule to save")
+        except Exception as ex:
+            _LOGGER.error(f"Error saving {self._smartplug.name} schedule to file {filename}.  Error is {ex}")
+
+    @callback
+    async def async_set_schedule(self, filename: str) -> None:
+        try:
+            if self._smartplug.schedule:
+                _LOGGER.info(f"Setting {self._smartplug.name} schedule from file {filename}")
+                await self.hass.async_add_executor_job(
+                    self._smartplug.schedule.set_schedule_from_yaml_file, filename
+                )
+                await self.async_force_update()
+            else:
+                _LOGGER.warning(f"{self._smartplug.name} has no schedule to assigned")
+        except Exception as ex:
+            _LOGGER.error(f"Error setting {self._smartplug.name} schedule from file {filename}.  Error is {ex}")
+
+    @callback
+    async def async_copy_schedule(self, to_entity_id)-> None:
+        to_smartplug_name = to_entity_id.replace("select.wiser_","").replace("_mode","").replace("_"," ")
+        try:
+            if self._smartplug.schedule:
+                # Add Check that to_entity is of same type as from_entity
+                _LOGGER.info(f"Copying schedule from {self._smartplug.name} to {to_smartplug_name}")
+                await self.hass.async_add_executor_job(
+                        self._smartplug.schedule.copy_schedule, self._data.wiserhub.devices.smartplugs.get_by_name(to_smartplug_name).schedule.id
+                    )
+                await self.async_force_update()
+            else:
+                _LOGGER.warning(f"{self._smartplug.name} has no schedule to copy")
+        except Exception as ex:
+            _LOGGER.error(f"Error copying schedule from {self._smartplug.name} to {to_smartplug_name}.  Error is {ex}")
+    
 
