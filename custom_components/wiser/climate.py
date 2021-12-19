@@ -16,13 +16,13 @@ from homeassistant.components.climate.const import (
     HVAC_MODE_HEAT,
     HVAC_MODE_OFF,
     SUPPORT_PRESET_MODE,
-    SUPPORT_TARGET_TEMPERATURE,
+    SUPPORT_TARGET_TEMPERATURE
 )
 
 from homeassistant.components.climate import ClimateEntity
 from homeassistant.const import ATTR_ENTITY_ID, ATTR_TEMPERATURE, TEMP_CELSIUS
 from homeassistant.core import callback
-from homeassistant.helpers import config_validation as cv, entity_platform, service
+from homeassistant.helpers import config_validation as cv, entity_platform
 from homeassistant.helpers.dispatcher import async_dispatcher_connect
 from homeassistant.util import dt
 
@@ -39,7 +39,7 @@ from .const import (
     WISER_BOOST_PRESETS,
     WISER_SERVICES
 )
-from .helpers import get_device_name, get_room_name, get_unique_id, get_identifier
+from .helpers import get_device_name, get_identifier
 
 import logging
 _LOGGER = logging.getLogger(__name__)
@@ -114,7 +114,7 @@ async def async_setup_entry(hass, config_entry, async_add_entities):
         )
 
         platform.async_register_entity_service(
-            WISER_SERVICES["SERVICE_GET_SCHEDULE"],
+            WISER_SERVICES["SERVICE_GET_HEATING_SCHEDULE"],
             {
                 vol.Optional(ATTR_FILENAME, default=""): vol.Coerce(str),
             },
@@ -122,7 +122,7 @@ async def async_setup_entry(hass, config_entry, async_add_entities):
         )
 
         platform.async_register_entity_service(
-            WISER_SERVICES["SERVICE_SET_SCHEDULE"],
+            WISER_SERVICES["SERVICE_SET_HEATING_SCHEDULE"],
             {
                 vol.Optional(ATTR_FILENAME, default=""): vol.Coerce(str),
             },
@@ -130,7 +130,7 @@ async def async_setup_entry(hass, config_entry, async_add_entities):
         )
 
         platform.async_register_entity_service(
-            WISER_SERVICES["SERVICE_COPY_SCHEDULE"],
+            WISER_SERVICES["SERVICE_COPY_HEATING_SCHEDULE"],
             {
                 vol.Required(ATTR_COPYTO_ENTITY_ID): cv.entity_id,
             },
@@ -152,6 +152,7 @@ class WiserRoom(ClimateEntity):
 
 
     async def async_force_update(self):
+        _LOGGER.debug(f"{self._room.name} requested hub update")
         await self._data.async_update(no_throttle=True)
 
     async def async_update(self):
@@ -325,12 +326,12 @@ class WiserRoom(ClimateEntity):
             return False
 
         if self._data.setpoint_mode == "boost":
-            _LOGGER.info(f"Setting temperature for {self.name} to {target_temperature} using boost")
+            _LOGGER.debug(f"Setting temperature for {self.name} to {target_temperature} using boost")
             await self.hass.async_add_executor_job(
                 self._room.set_target_temperature_for_duration, target_temperature, self._data.boost_time
             )
         else:
-            _LOGGER.info(f"Setting temperature for {self.name} to {target_temperature}")
+            _LOGGER.debug(f"Setting temperature for {self.name} to {target_temperature}")
             await self.hass.async_add_executor_job(
                 self._room.set_target_temperature, target_temperature
             )
@@ -350,6 +351,7 @@ class WiserRoom(ClimateEntity):
     @callback
     async def async_boost_heating(self, time_period: int, temperature: float) -> None:
         """Boost heating for room"""
+        _LOGGER.info(f"Boosting heating for {self._room.name} by {temperature}C for {time_period}m ")
         await self.hass.async_add_executor_job(
             self._room.boost, temperature, time_period
         )
@@ -358,6 +360,7 @@ class WiserRoom(ClimateEntity):
     @callback
     async def async_advance_schedule(self) -> None:
         """Advance to next schedule setting for room"""
+        _LOGGER.info(f"Advancing room schedule for  {self._room.name}")
         await self.hass.async_add_executor_job(
             self._room.schedule_advance
         )
@@ -388,7 +391,8 @@ class WiserRoom(ClimateEntity):
     async def async_copy_schedule(self, to_entity_id)-> None:
         to_room_name = to_entity_id.replace("climate.wiser_","").replace("_"," ")
         try:
-            _LOGGER.info(f"Copying schedule from {self._room.name} to {to_room_name}")
+            # Add Check that to_entity is of same type as from_entity
+            _LOGGER.info(f"Copying schedule from {self._room.name} to {to_room_name.title()}")
             await self.hass.async_add_executor_job(
                     self._room.schedule.copy_schedule, self._data.wiserhub.rooms.get_by_name(to_room_name).schedule.id
                 )
