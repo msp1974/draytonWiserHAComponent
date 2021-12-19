@@ -15,23 +15,28 @@ from wiserHeatAPIv2.wiserhub import (
     WiserHubRESTError,
 )
 
-from homeassistant import config_entries, exceptions, data_entry_flow
-from homeassistant.const import CONF_HOST, CONF_NAME, CONF_PORT, CONF_PASSWORD, CONF_SCAN_INTERVAL
+from homeassistant import config_entries, exceptions
+from homeassistant.components import zeroconf
+from homeassistant.const import CONF_HOST, CONF_NAME, CONF_PASSWORD, CONF_SCAN_INTERVAL
 from homeassistant.core import callback
 from homeassistant.data_entry_flow import FlowResult
-from homeassistant.helpers.typing import DiscoveryInfoType
 
 from .const import (
-    _LOGGER,
-    CONF_BOOST_TEMP,
-    CONF_BOOST_TEMP_TIME,
+    CONF_HEATING_BOOST_TEMP,
+    CONF_HEATING_BOOST_TIME,
+    CONF_LTS_SENSORS,
+    CONF_MOMENTS,
     CONF_SETPOINT_MODE,
+    CONF_HW_BOOST_TIME,
     DEFAULT_BOOST_TEMP,
     DEFAULT_BOOST_TEMP_TIME,
     DEFAULT_SCAN_INTERVAL,
     DEFAULT_SETPOINT_MODE,
     DOMAIN,
 )
+
+import logging
+_LOGGER = logging.getLogger(__name__)
 
 DATA_SCHEMA = vol.Schema(
     {vol.Required(CONF_HOST): str, vol.Required(CONF_PASSWORD): str}
@@ -125,18 +130,19 @@ class WiserFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
         )
     
 
-    async def async_step_zeroconf(self, discovery_info: dict[str, Any]) -> FlowResult:
+    async def async_step_zeroconf(self, discovery_info: zeroconf.ZeroconfServiceInfo) -> FlowResult:
         """Handle zeroconf discovery."""
-        if not discovery_info.get(CONF_NAME, "").startswith("WiserHeat"):
+        if not discovery_info.name.startswith("WiserHeat"):
             return self.async_abort(reason="not_wiser_hub")
 
-        zctype = discovery_info["type"]
-        name = discovery_info[CONF_NAME].replace(f".{zctype}", "")
-        host = name + ".local"
-        self.context.update({"title_placeholders": {"name": name}})
+        host = discovery_info.host
+        zctype = discovery_info.type
+        name = discovery_info.name.replace(f".{zctype}", "")
 
         await self.async_set_unique_id(get_unique_id(name))
         self._abort_if_unique_id_configured()
+
+        self.context.update({"title_placeholders": {"name": name}})
 
         self.discovery_info.update(
             {
@@ -198,15 +204,21 @@ class WiserOptionsFlowHandler(config_entries.OptionsFlow):
         data_schema = vol.Schema(
             {
                 vol.Optional(
-                    CONF_BOOST_TEMP,
+                    CONF_HEATING_BOOST_TEMP,
                     default=self.config_entry.options.get(
-                        CONF_BOOST_TEMP, DEFAULT_BOOST_TEMP
+                        CONF_HEATING_BOOST_TEMP, DEFAULT_BOOST_TEMP
                     ),
                 ): int,
                 vol.Optional(
-                    CONF_BOOST_TEMP_TIME,
+                    CONF_HEATING_BOOST_TIME,
                     default=self.config_entry.options.get(
-                        CONF_BOOST_TEMP_TIME, DEFAULT_BOOST_TEMP_TIME
+                        CONF_HEATING_BOOST_TIME, DEFAULT_BOOST_TEMP_TIME
+                    ),
+                ): int,
+                vol.Optional(
+                    CONF_HW_BOOST_TIME,
+                    default=self.config_entry.options.get(
+                        CONF_HW_BOOST_TIME, DEFAULT_BOOST_TEMP_TIME
                     ),
                 ): int,
                 vol.Optional(
@@ -215,6 +227,18 @@ class WiserOptionsFlowHandler(config_entries.OptionsFlow):
                         CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL
                     ),
                 ): int,
+                vol.Optional(
+                    CONF_MOMENTS,
+                    default=self.config_entry.options.get(
+                        CONF_MOMENTS, False
+                    ),
+                ): bool,
+                vol.Optional(
+                    CONF_LTS_SENSORS,
+                    default=self.config_entry.options.get(
+                        CONF_LTS_SENSORS, False
+                    ),
+                ): bool,
                 vol.Optional(
                     CONF_SETPOINT_MODE,
                     default=self.config_entry.options.get(

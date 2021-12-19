@@ -1,6 +1,6 @@
 {
     "config": {
-        "flow_title": "Wiser Heat Hub: ",
+        "flow_title": "{name}",
         "step": {
             "user": {
                 "title": "Wiser Heat Hub Setup",
@@ -32,10 +32,13 @@
         "step": {
             "init": {
                 "data": {
-                    "boost_temp": "Default Boost Temperature",
-                    "boost_time": "Default Boost Duration",
+                    "heating_boost_temp": "Default Heating Boost Temperature",
+                    "heating_boost_time": "Default Heating Boost Duration",
+                    "hotwater_boost_time": "Default Hot Water Boost Duration",
                     "scan_interval": "Scan Interval",
-                    "setpoint_mode": "Setpoint Mode"
+                    "setpoint_mode": "Setpoint Mode",
+                    "moments": "Enable Moments Buttons",
+                    "lts_sensors": "Enable LTS Sensors"
                 },
                 "description": "Amend Wiser parameters.",
                 "title": "Wiser Heat Hub Options"

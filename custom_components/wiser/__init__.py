@@ -47,24 +47,25 @@ from homeassistant.helpers.event import async_track_time_interval
 from homeassistant.util import Throttle
 
 from .const import (
-    _LOGGER,
+    CONF_MOMENTS,
     CONF_SETPOINT_MODE,
     DEFAULT_SETPOINT_MODE,
-    CONF_BOOST_TEMP,
-    CONF_BOOST_TEMP_TIME,
+    CONF_HEATING_BOOST_TEMP,
+    CONF_HEATING_BOOST_TIME,
+    CONF_HW_BOOST_TIME,
+    CONF_LTS_SENSORS,
     DATA,
     DEFAULT_BOOST_TEMP,
     DEFAULT_BOOST_TEMP_TIME,
     DEFAULT_SCAN_INTERVAL,
     DOMAIN,
-    HUBNAME,
     MANUFACTURER,
     UPDATE_LISTENER,
     UPDATE_TRACK,
-    WISER_ADD_PLATFORMS,
     WISER_PLATFORMS,
-    WISER_SERVICES,
 )
+
+from .helpers import get_device_name, get_identifier
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -91,11 +92,11 @@ CONFIG_SCHEMA = vol.Schema(
                     vol.Optional(CONF_MINIMUM, default=TEMP_MINIMUM): vol.All(
                         vol.Coerce(int)
                     ),
-                    vol.Optional(CONF_BOOST_TEMP, default=DEFAULT_BOOST_TEMP): vol.All(
+                    vol.Optional(CONF_HEATING_BOOST_TEMP, default=DEFAULT_BOOST_TEMP): vol.All(
                         vol.Coerce(int)
                     ),
                     vol.Optional(
-                        CONF_BOOST_TEMP_TIME, default=DEFAULT_BOOST_TEMP_TIME
+                        CONF_HEATING_BOOST_TIME, default=DEFAULT_BOOST_TEMP_TIME
                     ): vol.All(vol.Coerce(int)),
                 }
             ],
@@ -135,12 +136,12 @@ async def async_setup_entry(hass, config_entry):
     ):
         _LOGGER.error("Failed to login to wiser hub")
         return False
-    except RuntimeError as exc:
-        _LOGGER.error("Failed to setup wiser hub: %s", exc)
+    except RuntimeError as exr:
+        _LOGGER.error(f"Failed to setup wiser hub: {exr}")
         return ConfigEntryNotReady
-    except requests.exceptions.HTTPError as ex:
-        if ex.response.status_code > 400 and ex.response.status_code < 500:
-            _LOGGER.error("Failed to login to wiser hub: %s", ex)
+    except requests.exceptions.HTTPError as exh:
+        if exh.response.status_code > 400 and exh.response.status_code < 500:
+            _LOGGER.error(f"Failed to login to wiser hub: {exh}")
             return False
         raise ConfigEntryNotReady
 
@@ -158,32 +159,26 @@ async def async_setup_entry(hass, config_entry):
 
     update_listener = config_entry.add_update_listener(_async_update_listener)
 
-
     hass.data[DOMAIN][config_entry.entry_id] = {
         DATA: data,
         UPDATE_TRACK: update_track,
         UPDATE_LISTENER: update_listener,
     }
-    
+
+
+    # Setup platforms
     for platform in WISER_PLATFORMS:
         hass.async_create_task(
             hass.config_entries.async_forward_entry_setup(config_entry, platform)
         )
 
-    # Add new button functionality if HA > 2021.12
-    if MAJOR_VERSION > 2021 or (MAJOR_VERSION == 2021 and MINOR_VERSION >= 12):
-        for platform in WISER_ADD_PLATFORMS:
-            hass.async_create_task(
-                hass.config_entries.async_forward_entry_setup(config_entry, platform)
-            )
-
-
+    # Initialise global services
     @callback
     def remove_orphaned_entries_service(service):
-        # Need to add check that this is a hub device
-        hass.async_create_task(
-            data.async_remove_orphaned_entries(service.data[CONF_HUB_ID])
-        )
+        for entry_id in hass.data[DOMAIN]:
+            hass.async_create_task(
+                data.async_remove_orphaned_entries(entry_id, service.data[CONF_HUB_ID])
+            )
 
     hass.services.async_register(
         DOMAIN,
@@ -192,8 +187,10 @@ async def async_setup_entry(hass, config_entry):
         schema=SELECT_HUB_SCHEMA,
     )
 
-    _LOGGER.info("Wiser Component Setup Completed")
+    # Add hub as device
     await data.async_update_device_registry()
+
+    _LOGGER.info("Wiser Component Setup Completed")
 
     return True
 
@@ -213,8 +210,7 @@ async def async_unload_entry(hass, config_entry):
     """
     # Deregister services
     _LOGGER.debug("Unregister Wiser Services")
-    for service in WISER_SERVICES:
-        hass.services.async_remove(DOMAIN, WISER_SERVICES[service])
+    hass.services.async_remove(DOMAIN, SERVICE_REMOVE_ORPHANED_ENTRIES)
 
     _LOGGER.debug("Unloading Wiser Component")
     # Unload a config entry
@@ -249,11 +245,16 @@ class WiserHubHandle:
         self.wiserhub = None
         self.minimum_temp = TEMP_MINIMUM
         self.maximum_temp = TEMP_MAXIMUM
-        self.boost_temp = config_entry.options.get(CONF_BOOST_TEMP, DEFAULT_BOOST_TEMP)
+        self.boost_temp = config_entry.options.get(CONF_HEATING_BOOST_TEMP, DEFAULT_BOOST_TEMP)
         self.boost_time = config_entry.options.get(
-            CONF_BOOST_TEMP_TIME, DEFAULT_BOOST_TEMP_TIME
+            CONF_HEATING_BOOST_TIME, DEFAULT_BOOST_TEMP_TIME
+        )
+        self.hw_boost_time = config_entry.options.get(
+            CONF_HW_BOOST_TIME, DEFAULT_BOOST_TEMP_TIME
         )
         self.setpoint_mode = config_entry.options.get(CONF_SETPOINT_MODE, DEFAULT_SETPOINT_MODE)
+        self.enable_moments = config_entry.options.get(CONF_MOMENTS, False)
+        self.enable_lts_sensors = config_entry.options.get(CONF_LTS_SENSORS, False)
 
     def connect(self):
         """Connect to Wiser Hub."""
@@ -271,26 +272,25 @@ class WiserHubHandle:
         try:
             result = await self._hass.async_add_executor_job(self.wiserhub.read_hub_data)
             if result is not None:
-                _LOGGER.info("**Wiser Hub data updated - {} **".format(self.wiserhub.system.name))
+                _LOGGER.debug(f"Wiser Hub data updated - {self.wiserhub.system.name}")
                 # Send update notice to all components to update
-                dispatcher_send(self._hass, "{}-HubUpdateMessage".format(self.wiserhub.system.name))
+                dispatcher_send(self._hass, f"{self.wiserhub.system.name}-HubUpdateMessage")
                 return True
 
-            _LOGGER.error("Unable to update from Wiser hub - {}".format(self.wiserhub.system.name))
+            _LOGGER.error(f"Unable to update from Wiser hub - {self.wiserhub.system.name}")
             return False
         except json.decoder.JSONDecodeError as ex:
             _LOGGER.error(
-                "Data not in JSON format when getting data from the Wiser hub. Error is %s",
-                str(ex),
+                f"Data not in JSON format when getting data from the Wiser hub. Error is {str(ex)}"
             )
             return False
         except WiserHubConnectionError as ex:
-            _LOGGER.error("Unable to update from Wiser hub {} due to timeout error".format(self.wiserhub.system.name))
-            _LOGGER.debug("Error is %s", str(ex))
+            _LOGGER.error(f"Unable to update from Wiser hub {self.wiserhub.system.name} due to timeout error")
+            _LOGGER.debug(f"Error is {str(ex)}")
             return False
         except Exception as ex:  # pylint: disable=broad-except
-            _LOGGER.error("Unable to update from Wiser hub {} due to unknown error".format(self.wiserhub.system.name))
-            _LOGGER.error("Error is %s", str(ex))
+            _LOGGER.error(f"Unable to update from Wiser hub {self.wiserhub.system.name} due to unknown error")
+            _LOGGER.debug(f"Error is {str(ex)}")
             return False
 
 
@@ -305,18 +305,21 @@ class WiserHubHandle:
         device_registry.async_get_or_create(
             config_entry_id=self._config_entry.entry_id,
             connections={(CONNECTION_NETWORK_MAC, self.wiserhub.system.network.mac_address)},
-            identifiers={(DOMAIN, self.unique_id)},
+            identifiers={(DOMAIN, get_identifier(self, 0))},
             manufacturer=MANUFACTURER,
-            name=HUBNAME + f" ({self.wiserhub.system.name})",
+            name=get_device_name(self, 0),
             model=self.wiserhub.system.model,
             sw_version=self.wiserhub.system.firmware_version,
         )
 
     @callback
-    async def async_remove_orphaned_entries(self, wiser_hub_id):
+    async def async_remove_orphaned_entries(self, entry_id, wiser_hub_id: str):
         """Remove orphaned Wiser entries from device registry"""
-        if wiser_hub_id.lower() == self.wiserhub.system.name.lower():
+        api = self._hass.data[DOMAIN][entry_id]["data"]
+
+        if api.wiserhub.system.name == wiser_hub_id:
             _LOGGER.info(f"Removing orphaned devices for {wiser_hub_id}")
+
             device_registry = dr.async_get(self._hass)
             entity_registry = er.async_get(self._hass)
 
@@ -326,13 +329,13 @@ class WiserHubHandle:
             all_devices = [
                 entry
                 for entry in device_registry.devices.values()
-                if self._config_entry.entry_id in entry.config_entries
+                if entry_id in entry.config_entries
             ]
 
             # Don't remove the Gateway host entry
             wiser_hub = device_registry.async_get_device(
-                connections={(CONNECTION_NETWORK_MAC, self.wiserhub.system.network.mac_address)},
-                identifiers={(DOMAIN, self.unique_id)},
+                connections={(CONNECTION_NETWORK_MAC, api.wiserhub.system.network.mac_address)},
+                identifiers={(DOMAIN, api.unique_id)},
             )
             devices_to_be_removed = [ device.id for device in all_devices if device.id != wiser_hub.id ]
 
