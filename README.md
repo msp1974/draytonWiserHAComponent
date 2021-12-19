@@ -37,9 +37,9 @@ As such, this v3.0 release is pretty much a full rewrite of both the api and the
 Below is a list of the new features in this upgrade (these are in addition to the already existing great functionality!):
 
 
-- Hub discovery via zeroconf. Once you add the integration via HACs and restart, HA will discover the hub and display it in the integrations page. This also uses the dns name to talk to the hub so if it changes IP you will not need to reinstall.
-
-- Support for multiple Wiser Hubs.  If you are lucky enough to have more than one house, you can add your multiple hubs to one HA instance.
+- System Setup
+  - Hub discovery via zeroconf. Once you add the integration via HACs and restart, HA will discover the hub and display it in the integrations page. This also uses the dns name to talk to the hub so if it changes IP you will not need to reinstall.
+  - Support for multiple Wiser Hubs.  If you are lucky enough to have more than one house, you can add your multiple hubs to one HA instance.
 
 - Hub/System
     - Button to boost all rooms
@@ -53,7 +53,7 @@ Below is a list of the new features in this upgrade (these are in addition to th
     - Button to cancel hot water overrides
     - Button to toggle on/off.  In auto mode this is an override until next schedule time.
     - Hot water mode selector to allow setting via UI instead of just service
-    - Hot water operation mode sensor to show boost (with remaining time), override, away mode or normal operating
+    - Hot water operation mode sensor to show boost (with remaining time), override, away mode, auto or manual
 
 - Rooms
     - New switches to control open window detection in each room
@@ -75,6 +75,8 @@ Below is a list of the new features in this upgrade (these are in addition to th
     - Majority of services now utilise new HA functionality to make using them in scripts and automations much easier through the UI.
     - New service to remove devices from HA if you have removed Rooms or Devices from Wiser
     - New service to boost hotwater for custom time period
+    - New service to set smartplug mode
+    - Schedule save, set and copy are now split between heating and onoff schedules
     - All new buttons, switches and selectors can be used with the relevant services for these entity types.
 
 - Moments
@@ -85,8 +87,10 @@ Below is a list of the new features in this upgrade (these are in addition to th
 
 # Breaking Changes
 
-Many entity names and unique ids have changed meaning new entities will be created and the old ones will show as unavailable
-Standardisation of entity attribute names format meaning some attribute names are now different
+- Many entity names and unique ids have changed meaning new entities will be created and the old ones will show as unavailable
+- Standardisation of entity attribute names format meaning some attribute names are now different
+- The structure and naming of some services has changed therefore scripts and automations will need updating
+
 
 
 
